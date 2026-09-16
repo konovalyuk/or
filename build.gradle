@@ -1,0 +1,51 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.mavan'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.register('buildFrontend', Exec) {
+	workingDir layout.projectDirectory.dir('frontend')
+	commandLine 'npm', 'run', 'build'
+	onlyIf { layout.projectDirectory.dir('frontend').asFile.exists() }
+}
+
+tasks.register('copyFrontend', Copy) {
+	dependsOn tasks.named('buildFrontend')
+	from layout.projectDirectory.dir('frontend/dist')
+	into layout.buildDirectory.dir('resources/main/static')
+	onlyIf { layout.projectDirectory.dir('frontend/dist').asFile.exists() }
+}
+
+tasks.named('processResources') {
+	dependsOn tasks.named('copyFrontend')
+}

@@ -1,0 +1,14 @@
+.git
+.github
+.gradle
+.idea
+.vscode
+build
+node_modules
+src/main/frontend/generated
+src/main/bundles
+frontend/node_modules
+frontend/dist
+.env
+.env.*
+!gradle/wrapper/gradle-wrapper.jar
