@@ -47,11 +47,11 @@ public class TransPotentials {
                      * u_i + v_j = c_ij
                      */
                     if (uKnown[i] && !vKnown[j]) {
-                        v[j] = table.costs()[i][j] - u[i];
+                        v[j] = table.costAt(i, j) - u[i];
                         vKnown[j] = true;
                         changed = true;
                     } else if (vKnown[j] && !uKnown[i]) {
-                        u[i] = table.costs()[i][j] - v[j];
+                        u[i] = table.costAt(i, j) - v[j];
                         uKnown[i] = true;
                         changed = true;
                     }
@@ -106,7 +106,7 @@ public class TransPotentials {
 
         for (int i = 0; i < table.getRows(); i++) {
             for (int j = 0; j < table.getColumns(); j++) {
-                evaluation[i][j] = u[i] + v[j] - table.costs()[i][j];
+                evaluation[i][j] = u[i] + v[j] - table.costAt(i, j);
 
                 if (table.basic()[i][j]) {
                     continue;

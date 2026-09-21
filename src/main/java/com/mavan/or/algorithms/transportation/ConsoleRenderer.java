@@ -37,7 +37,7 @@ public class ConsoleRenderer {
 
             printPotentials(state);
             printEvaluation(state);
-            printTransportationTable(state.allocation(), state.basic());
+            printTransportationTable(state.allocationAfter(), state.basicAfter());
 
             System.out.printf(Locale.US, "Optimal cost = %.10f%n", state.totalCost());
 
@@ -62,7 +62,7 @@ public class ConsoleRenderer {
         System.out.println();
         System.out.println("Transportation table after pivot:");
 
-        printTransportationTable(state.allocation(), state.basic());
+        printTransportationTable(state.allocationAfter(), state.basicAfter());
 
         System.out.printf(Locale.US, "Cost = %.10f%n", state.totalCost());
     }
@@ -146,7 +146,7 @@ public class ConsoleRenderer {
             System.out.printf("%10s", "S" + (i + 1));
 
             for (int j = 0; j < table.getColumns(); j++) {
-                String marker = state.basic()[i][j] ? "*" : "";
+                String marker = state.basicBefore()[i][j] ? "*" : "";
                 System.out.printf(Locale.US, "%13.4f%s", state.evaluation()[i][j], marker);
             }
             System.out.println();
@@ -181,7 +181,7 @@ public class ConsoleRenderer {
                 System.out.printf(Locale.US, "%13.4f%s", allocation[i][j], marker);
             }
 
-            System.out.printf(Locale.US, "%14.4f%n", table.supply()[i]);
+            System.out.printf(Locale.US, "%14.4f%n", table.supplyAt(i));
         }
 
         /*
@@ -190,11 +190,10 @@ public class ConsoleRenderer {
         System.out.printf("%10s", "Demand");
 
         for (int j = 0; j < table.getColumns(); j++) {
-            System.out.printf(Locale.US, "%14.4f", table.demand()[j]);
+            System.out.printf(Locale.US, "%14.4f", table.demandAt(j));
         }
 
         System.out.println();
         System.out.println("* = basic variable");
     }
 }
-

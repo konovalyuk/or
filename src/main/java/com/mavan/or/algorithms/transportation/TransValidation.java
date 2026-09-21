@@ -4,7 +4,10 @@ import com.mavan.or.algorithms.transportation.datamodels.TransTable;
 
 import java.util.Locale;
 
-public class TransValidation {
+public final class TransValidation {
+
+    private TransValidation() {
+    }
 
     public static void validateInput(double[][] costs, double[] supply, double[] demand) {
         if (costs == null || costs.length == 0) {
@@ -64,7 +67,30 @@ public class TransValidation {
         }
     }
 
-    private void validateSolutionDimensions(double[][] solution, TransTable table) {
+    public static void validateWorkingState(double[][] allocation, boolean[][] basic,
+                                            int rows, int columns) {
+        if (allocation == null || allocation.length != rows) {
+            throw new IllegalArgumentException("Allocation matrix row count does not match costs.");
+        }
+        if (basic == null || basic.length != rows) {
+            throw new IllegalArgumentException("Basis matrix row count does not match costs.");
+        }
+        for (int i = 0; i < rows; i++) {
+            if (allocation[i] == null || allocation[i].length != columns) {
+                throw new IllegalArgumentException("Allocation matrix must be rectangular.");
+            }
+            if (basic[i] == null || basic[i].length != columns) {
+                throw new IllegalArgumentException("Basis matrix must be rectangular.");
+            }
+            for (double value : allocation[i]) {
+                if (!Double.isFinite(value) || value < 0.0) {
+                    throw new IllegalArgumentException("Allocations must be finite and nonnegative.");
+                }
+            }
+        }
+    }
+
+    private static void validateSolutionDimensions(double[][] solution, TransTable table) {
         if (solution == null || solution.length != table.getRows()) {
             throw new IllegalArgumentException("Invalid solution matrix row count.");
         }
@@ -76,7 +102,7 @@ public class TransValidation {
         }
     }
 
-    public void validateSolution(double[][] solution, TransTable table) {
+    public static void validateSolution(double[][] solution, TransTable table) {
         validateSolutionDimensions(solution, table);
 
         for (int i = 0; i < table.getRows(); i++) {
@@ -89,8 +115,8 @@ public class TransValidation {
                 rowSum += solution[i][j];
             }
 
-            if (Math.abs(rowSum - table.supply()[i]) > TransTable.EPS) {
-                throw new IllegalArgumentException("Supply constraint violated for row " + (i + 1) + ": expected " + table.supply()[i] + ", got " + rowSum);
+            if (Math.abs(rowSum - table.supplyAt(i)) > TransTable.EPS) {
+                throw new IllegalArgumentException("Supply constraint violated for row " + (i + 1) + ": expected " + table.supplyAt(i) + ", got " + rowSum);
             }
         }
 
@@ -101,8 +127,8 @@ public class TransValidation {
                 columnSum += solution[i][j];
             }
 
-            if (Math.abs(columnSum - table.demand()[j]) > TransTable.EPS) {
-                throw new IllegalArgumentException("Demand constraint violated for column " + (j + 1) + ": expected " + table.demand()[j] + ", got " + columnSum);
+            if (Math.abs(columnSum - table.demandAt(j)) > TransTable.EPS) {
+                throw new IllegalArgumentException("Demand constraint violated for column " + (j + 1) + ": expected " + table.demandAt(j) + ", got " + columnSum);
             }
         }
     }

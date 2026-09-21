@@ -1,60 +1,69 @@
-import { useMemo, useState } from 'react'
-import { type InitialMethod, solveTransportation, type TransportationResult } from './api'
+import { useEffect, useMemo, useState } from 'react'
+import { type InitialMethod, solveTransportation, type InitialSolutionStep, type TransportationResult, type TransportationState } from './api'
 
 const sunRayCosts = [[10, 2, 20, 11], [12, 7, 9, 20], [4, 14, 16, 18]]
 const sunRaySupply = [15, 25, 10]
 const sunRayDemand = [5, 15, 15, 15]
 
+function navigate(path: string) { window.history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')) }
+function fmt(value: number) { return Number(value).toFixed(2) }
+
 function NumberInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  return <input className="matrix-input" type="number" min="0" step="any" value={value}
-    onChange={(event) => onChange(Number(event.target.value))} />
+  return <input className="matrix-input" type="number" min="0" step="any" value={value} onChange={event => onChange(Number(event.target.value))} />
 }
 
-function AllocationTable({ allocation, supply, demand }: { allocation: number[][]; supply: number[]; demand: number[] }) {
-  return <div className="table-scroll"><table className="matrix-table result-table">
-    <thead><tr><th>Source / destination</th>{demand.map((_, j) => <th key={j}>D{j + 1}</th>)}<th>Supply</th></tr></thead>
-    <tbody>{allocation.map((row, i) => <tr key={i}><th>S{i + 1}</th>{row.map((value, j) => <td key={j}>{value > 0 ? value : '—'}</td>)}<td>{supply[i]}</td></tr>)}</tbody>
-    <tfoot><tr><th>Demand</th>{demand.map((value, j) => <td key={j}>{value}</td>)}<td /></tr></tfoot>
+function AllocationTable({ allocation, basic, costs, supply, demand, sourceLabels, destinationLabels, evaluation, cycle, entering, leaving, u, v, showPotentials = false, showCost = true }: {
+  allocation: number[][]; basic?: boolean[][]; costs: number[][]; supply: number[]; demand: number[]; sourceLabels: string[]; destinationLabels: string[]
+  evaluation?: number[][]; cycle?: { row: number; column: number }[]; entering?: { row: number; column: number } | null; leaving?: { row: number; column: number } | null; u?: number[]; v?: number[]; showPotentials?: boolean; showCost?: boolean
+}) {
+  const inCycle = (i: number, j: number) => cycle?.findIndex(cell => cell.row === i && cell.column === j) ?? -1
+  return <div className="table-scroll"><table className="matrix-table solution-table"><thead><tr><th colSpan={showPotentials ? 2 : 1}>Route</th>{destinationLabels.map((label, j) => <th key={label}><span>{label}</span>{showPotentials && v && <small className="potential-header">v{j + 1} = {fmt(v[j])}</small>}</th>)}<th>Supply</th></tr></thead>
+    <tbody>{allocation.map((row, i) => <tr key={sourceLabels[i]}>{showPotentials && <td className="potential-side">u{i + 1} = {u ? fmt(u[i]) : '—'}</td>}<th>{sourceLabels[i]}</th>{row.map((value, j) => {
+      const cycleIndex = inCycle(i, j); const isEntering = entering?.row === i && entering.column === j; const isLeaving = leaving?.row === i && leaving.column === j
+      return <td key={j} className={`${basic?.[i]?.[j] ? 'basic-cell' : ''} ${isEntering ? 'entering-cell' : ''} ${isLeaving ? 'leaving-cell' : ''}`}>
+        {showCost && <span className="cell-cost">{fmt(costs[i][j])}</span>}<strong>{fmt(value)}</strong>{basic?.[i]?.[j] && <span className="basic-mark">●</span>}
+        {evaluation && <span className="cell-evaluation">{fmt(evaluation[i][j])}</span>}{cycleIndex >= 0 && <span className="cycle-mark">{cycleIndex % 2 === 0 ? '+' : '−'}</span>}
+      </td>
+    })}<td className="summary-cell">{fmt(supply[i])}</td></tr>)}</tbody>
+    <tfoot><tr>{showPotentials && <th /> }<th>Demand</th>{demand.map((value, j) => <td key={j} className="summary-cell">{fmt(value)}</td>)}<td /></tr></tfoot>
   </table></div>
 }
 
-export function App() {
-  const [costs, setCosts] = useState(sunRayCosts)
-  const [supply, setSupply] = useState(sunRaySupply)
-  const [demand, setDemand] = useState(sunRayDemand)
-  const [method, setMethod] = useState<InitialMethod>('VOGEL_APPROXIMATION')
-  const [result, setResult] = useState<TransportationResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [solving, setSolving] = useState(false)
-  const balanced = useMemo(() => supply.reduce((a, b) => a + b, 0) === demand.reduce((a, b) => a + b, 0), [supply, demand])
-
-  function updateCost(row: number, column: number, value: number) {
-    setCosts(costs.map((line, i) => line.map((cell, j) => i === row && j === column ? value : cell)))
-  }
-  function updateSupply(row: number, value: number) { setSupply(supply.map((cell, i) => i === row ? value : cell)) }
-  function updateDemand(column: number, value: number) { setDemand(demand.map((cell, i) => i === column ? value : cell)) }
-  function loadSunRay() { setCosts(sunRayCosts); setSupply(sunRaySupply); setDemand(sunRayDemand); setResult(null); setError(null) }
-
-  async function solve() {
-    setError(null)
-    if (!balanced) { setError('Total supply must equal total demand.'); return }
-    setSolving(true)
-    try { setResult(await solveTransportation({ costs, supply, demand, initialMethod: method })) }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to solve the problem.') }
-    finally { setSolving(false) }
-  }
-
-  return <div className="app-shell">
-    <header className="topbar"><div className="page-width brand"><span className="brand-mark">∑</span><div><h1>Operations Research Lab</h1><p>Transportation model · MODI method</p></div></div></header>
-    <main className="page-width content">
-      <section className="hero"><div><span className="eyebrow">INTERACTIVE WORKSPACE</span><h2>Transportation problem solver</h2><p>Build a balanced transportation table, choose an initial solution, and inspect the optimal allocation.</p></div><button className="button secondary" onClick={loadSunRay}>Load SunRay example</button></section>
-      <section className="card"><div className="section-heading"><div><h3>Problem data</h3><p>Unit transportation costs, supply, and demand.</p></div><span className={balanced ? 'status ok' : 'status warning'}>{balanced ? 'Balanced' : 'Needs balancing'}</span></div>
-        <div className="table-scroll"><table className="matrix-table"><thead><tr><th>Cost</th>{demand.map((_, j) => <th key={j}>D{j + 1}</th>)}<th>Supply</th></tr></thead><tbody>{costs.map((row, i) => <tr key={i}><th>S{i + 1}</th>{row.map((value, j) => <td key={j}><NumberInput value={value} onChange={(next) => updateCost(i, j, next)} /></td>)}<td><NumberInput value={supply[i]} onChange={(next) => updateSupply(i, next)} /></td></tr>)}</tbody><tfoot><tr><th>Demand</th>{demand.map((value, j) => <td key={j}><NumberInput value={value} onChange={(next) => updateDemand(j, next)} /></td>)}<td /></tr></tfoot></table></div>
-        <div className="solver-actions"><label>Initial basic solution<select value={method} onChange={(event) => setMethod(event.target.value as InitialMethod)}><option value="VOGEL_APPROXIMATION">Vogel approximation</option><option value="LEAST_COST">Least-cost method</option><option value="NORTHWEST_CORNER">Northwest corner</option></select></label><button className="button primary" onClick={solve} disabled={solving}>{solving ? 'Solving…' : 'Solve problem'}</button></div>
-        {error && <p className="notice error">{error}</p>}
-      </section>
-      {result && <section className="result-grid"><article className="card metric"><p>Optimal cost</p><strong>{result.optimalCost.toFixed(2)}</strong><span>Method: {result.initialMethod.replaceAll('_', ' ').toLowerCase()}</span></article><article className="card allocation"><div className="section-heading"><div><h3>Optimal allocation</h3><p>Positive shipments in the final basic feasible solution.</p></div></div><AllocationTable allocation={result.optimalAllocation} supply={supply} demand={demand} /></article></section>}
-    </main>
-    <footer>Operations Research Lab · Transportation Model and Its Variants</footer>
-  </div>
+function Header({ path }: { path: string }) {
+  return <header className="topbar"><div className="page-width brand"><button className="brand-button" onClick={() => navigate('/')}><span className="brand-mark">∑</span><span><b>Operations Research Lab</b><small>Transportation model · MODI method</small></span></button><nav><button className={path === '/' ? 'nav-active' : ''} onClick={() => navigate('/')}>Home</button><button className={path === '/production' ? 'nav-active' : ''} onClick={() => navigate('/production')}>Production</button><button className={path === '/education' ? 'nav-active' : ''} onClick={() => navigate('/education')}>Education</button></nav></div></header>
 }
+
+function Landing() { return <><section className="hero landing-hero"><div><span className="eyebrow">TRANSPORTATION MODEL · CHAPTER 5</span><h2>Make every shipment decision visible.</h2><p>Explore supply, demand and route costs with a practical business view or a step-by-step MODI classroom view.</p></div><div className="hero-symbol">u + v − c</div></section><section className="mode-grid"><article className="card mode-card production-card"><span className="mode-icon">↗</span><h3>Production</h3><p>Enter a cost matrix and get the minimum shipping plan, routes and total cost — without algorithmic noise.</p><button className="button primary" onClick={() => navigate('/production')}>Open production</button></article><article className="card mode-card education-card"><span className="mode-icon">∴</span><h3>Education</h3><p>Replay every initial allocation, potential, evaluation, loop and pivot with a visual transportation tableau.</p><button className="button secondary" onClick={() => navigate('/education')}>Open education</button></article></section><section className="card principles"><span className="eyebrow">WHAT YOU WILL SEE</span><div><span><b>01</b> Balance the model</span><span><b>02</b> Build a feasible basis</span><span><b>03</b> Improve with MODI</span></div></section></> }
+
+function ProblemEditor({ onSolved, production }: { onSolved: (result: TransportationResult) => void; production: boolean }) {
+  const [costs, setCosts] = useState(sunRayCosts.map(row => [...row])); const [supply, setSupply] = useState([...sunRaySupply]); const [demand, setDemand] = useState([...sunRayDemand]); const [method, setMethod] = useState<InitialMethod>('VOGEL_APPROXIMATION'); const [error, setError] = useState<string | null>(null); const [solving, setSolving] = useState(false)
+  const totalSupply = useMemo(() => supply.reduce((a, b) => a + b, 0), [supply]); const totalDemand = useMemo(() => demand.reduce((a, b) => a + b, 0), [demand]);
+  const updateCost = (i: number, j: number, value: number) => setCosts(costs.map((row, r) => row.map((cell, c) => r === i && c === j ? value : cell)))
+  const loadExample = () => { setCosts(sunRayCosts.map(row => [...row])); setSupply([...sunRaySupply]); setDemand([...sunRayDemand]); setError(null) }
+  async function solve() { setError(null); setSolving(true); try { onSolved(await solveTransportation({ costs, supply, demand, initialMethod: method })) } catch (e) { setError(e instanceof Error ? e.message : 'Unable to solve the problem.') } finally { setSolving(false) } }
+  return <section className="card editor-card"><div className="section-heading"><div><span className="eyebrow">{production ? 'BUSINESS INPUT' : 'STEP 1 · PROBLEM DATA'}</span><h3>{production ? 'Describe your shipping network' : 'Transportation table'}</h3><p>Enter unit route costs, available supply and required demand.</p></div><span className={Math.abs(totalSupply - totalDemand) < 1e-9 ? 'status ok' : 'status warning'}>{Math.abs(totalSupply - totalDemand) < 1e-9 ? 'Balanced' : 'Auto-balance on solve'}</span></div>
+    <div className="table-scroll"><table className="matrix-table input-table"><thead><tr><th>Unit cost</th>{demand.map((_, j) => <th key={j}>Destination {j + 1}</th>)}<th>Supply</th></tr></thead><tbody>{costs.map((row, i) => <tr key={i}><th>Source {i + 1}</th>{row.map((value, j) => <td key={j}><NumberInput value={value} onChange={next => updateCost(i, j, next)} /></td>)}<td><NumberInput value={supply[i]} onChange={next => setSupply(supply.map((v, r) => r === i ? next : v))} /></td></tr>)}</tbody><tfoot><tr><th>Demand</th>{demand.map((value, j) => <td key={j}><NumberInput value={value} onChange={next => setDemand(demand.map((v, c) => c === j ? next : v))} /></td>)}<td /></tr></tfoot></table></div>
+    {!production && <div className="solver-actions"><label>Initial basic solution<select value={method} onChange={e => setMethod(e.target.value as InitialMethod)}><option value="VOGEL_APPROXIMATION">Vogel approximation</option><option value="LEAST_COST">Least-cost method</option><option value="NORTHWEST_CORNER">Northwest corner</option></select></label><button className="button primary" onClick={solve} disabled={solving}>{solving ? 'Solving…' : 'Solve and explore'}</button></div>}
+    {production && <div className="solver-actions"><button className="button secondary" onClick={loadExample}>Load example</button><button className="button primary" onClick={solve} disabled={solving}>{solving ? 'Calculating…' : 'Find minimum plan'}</button></div>}{error && <p className="notice error">{error}</p>}</section>
+}
+
+function ProductionResult({ result }: { result: TransportationResult }) { const routes: { from: string; to: string; units: number; cost: number }[] = []; result.optimalAllocation.forEach((row, i) => row.forEach((units, j) => { const dummy = result.dummyAdded && ((i === result.dummyIndex && result.dummyType === 'SOURCE') || (j === result.dummyIndex && result.dummyType === 'DESTINATION')); if (units > 1e-9 && !dummy) routes.push({ from: result.sourceLabels[i], to: result.destinationLabels[j], units, cost: result.costs[i][j] }) })); return <section className="card result-card"><div className="result-banner"><div><span className="eyebrow">OPTIMAL BUSINESS PLAN</span><h3>Ship only where it matters</h3><p>{result.dummyAdded ? `The model was balanced with a ${result.dummyType.toLowerCase()} dummy route.` : 'All supply and demand are balanced.'}</p></div><strong>{fmt(result.optimalCost)}</strong></div><div className="table-scroll"><table className="route-table"><thead><tr><th>From</th><th>To</th><th>Truckloads</th><th>Unit cost</th><th>Route total</th></tr></thead><tbody>{routes.map(route => <tr key={`${route.from}-${route.to}`}><td>{route.from}</td><td>{route.to}</td><td>{fmt(route.units)}</td><td>{fmt(route.cost)}</td><td>{fmt(route.units * route.cost)}</td></tr>)}</tbody></table></div></section> }
+
+function InitialReplay({ result }: { result: TransportationResult }) { const [index, setIndex] = useState(Math.max(0, result.initialSteps.length - 1)); const step: InitialSolutionStep | undefined = result.initialSteps[index]; if (!step) return null; return <section className="card replay-card"><div className="section-heading"><div><span className="eyebrow">INITIAL BASIC FEASIBLE SOLUTION</span><h3>{result.initialMethod.replaceAll('_', ' ')}</h3><p>Move the slider to watch each allocation appear.</p></div><span className="status ok">Step {index + 1} / {result.initialSteps.length}</span></div><AllocationTable allocation={step.allocation} basic={step.basic} costs={result.costs} supply={result.supply} demand={result.demand} sourceLabels={result.sourceLabels} destinationLabels={result.destinationLabels} /><input className="timeline" type="range" min="0" max={result.initialSteps.length - 1} value={index} onChange={e => setIndex(Number(e.target.value))} /><div className="replay-caption">{step.selectedRow >= 0 ? `Allocated ${fmt(step.allocatedAmount)} to ${result.sourceLabels[step.selectedRow]} → ${result.destinationLabels[step.selectedColumn]}` : 'Basis completed'} · Cost {fmt(step.totalCost)}</div></section> }
+
+function EducationSteps({ result }: { result: TransportationResult }) {
+  const [index, setIndex] = useState(0)
+  const state: TransportationState | undefined = result.states[index]
+  if (!state) return null
+  return <section className="card history">
+    <div className="section-heading"><div><span className="eyebrow">MODI ITERATIONS</span><h3>{state.optimal ? 'Optimality condition satisfied' : `Iteration ${state.iteration}`}</h3><p>{state.optimal ? 'Every nonbasic evaluation is non-positive.' : 'The tableau contains route costs, allocations, potentials and evaluations.'}</p></div><span className="status ok">{index + 1} / {result.states.length}</span></div>
+    <AllocationTable allocation={state.allocationBefore} basic={state.basicBefore} costs={result.costs} supply={result.supply} demand={result.demand} sourceLabels={result.sourceLabels} destinationLabels={result.destinationLabels} evaluation={state.evaluation} cycle={state.cycle} entering={state.entering} leaving={state.leaving} u={state.u} v={state.v} showPotentials />
+    <div className="pivot-details"><h4>{state.optimal ? 'Optimal solution' : 'Pivot explanation'}</h4>{state.optimal ? <p>Optimal cost = <b>{fmt(state.totalCost)}</b></p> : <><p>Entering: <b>x{state.entering!.row + 1}{state.entering!.column + 1}</b> · Leaving: <b>x{state.leaving!.row + 1}{state.leaving!.column + 1}</b></p><p>Theta: <b>{fmt(state.theta)}</b></p><p>Closed loop: {state.cycle.map((cell, i) => `${i ? (i % 2 ? ' − ' : ' + ') : ''}x${cell.row + 1}${cell.column + 1}`).join('')}</p></>}</div>
+    <div className="next-table"><h4>{state.optimal ? 'Optimal allocation' : 'Table after this pivot'}</h4><AllocationTable allocation={state.allocationAfter} basic={state.basicAfter} costs={result.costs} supply={result.supply} demand={result.demand} sourceLabels={result.sourceLabels} destinationLabels={result.destinationLabels} /></div>
+    <div className="step-controls"><button className="button secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>Previous</button><input className="timeline" type="range" min="0" max={result.states.length - 1} value={index} onChange={e => setIndex(Number(e.target.value))} /><button className="button primary" disabled={index === result.states.length - 1} onClick={() => setIndex(index + 1)}>Next</button></div>
+  </section>
+}
+
+function Workspace({ production }: { production: boolean }) { const [result, setResult] = useState<TransportationResult | null>(null); return <><section className="hero compact-hero"><div><span className="eyebrow">{production ? 'PRODUCTION SCENARIO' : 'EDUCATION SCENARIO'}</span><h2>{production ? 'A clear plan for every shipment.' : 'See the transportation algorithm think.'}</h2><p>{production ? 'Focus on routes, truckloads and the minimum total cost.' : 'Follow Taha’s tableau from the initial basis to the final MODI optimum.'}</p></div><button className="button secondary" onClick={() => navigate('/')}>Change scenario</button></section><ProblemEditor onSolved={setResult} production={production} />{result && (production ? <ProductionResult result={result} /> : <><section className="result-grid"><article className="card metric"><p>Optimal cost</p><strong>{fmt(result.optimalCost)}</strong><span>{result.initialMethod.replaceAll('_', ' ')}</span></article><article className="card allocation"><div className="section-heading"><div><h3>Final transportation table</h3><p>Basic cells are marked with ●.</p></div></div><AllocationTable allocation={result.optimalAllocation} basic={result.optimalBasic} costs={result.costs} supply={result.supply} demand={result.demand} sourceLabels={result.sourceLabels} destinationLabels={result.destinationLabels} /></article></section><InitialReplay result={result} /><EducationSteps result={result} /></>)}</> }
+
+export function App() { const [path, setPath] = useState(window.location.pathname); useEffect(() => { const handler = () => setPath(window.location.pathname); window.addEventListener('popstate', handler); return () => window.removeEventListener('popstate', handler) }, []); const page = path === '/production' ? <Workspace production /> : path === '/education' ? <Workspace production={false} /> : <Landing />; return <div className="app-shell"><Header path={path} /><main className="page-width content">{page}</main><footer>Operations Research Lab · Transportation Model and Its Variants</footer></div> }

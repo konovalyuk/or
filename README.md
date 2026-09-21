@@ -10,10 +10,10 @@ Interactive educational application for transportation problems and the MODI (tr
 
 ## Local development
 
-Run the backend in one terminal:
+Run the backend in one terminal (the `dev` profile enables CORS for the local Vite server):
 
 ```bash
-./gradlew bootRun
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
 ```
 
 Run the frontend with live reload in another:
@@ -25,6 +25,13 @@ npm run dev
 ```
 
 Open http://localhost:5173. The Vite development server proxies `/api` requests to Spring Boot on port 8080.
+
+The landing page offers two workflows:
+
+- **Production** shows only the numeric input and the final shipment plan.
+- **Education** replays the initial basic feasible solution cell by cell and then walks through the MODI potentials, evaluations, closed loop, theta, and pivots.
+
+The API accepts a rectangular cost matrix, supply, demand, and one of `NORTHWEST_CORNER`, `LEAST_COST`, or `VOGEL_APPROXIMATION`. Unequal totals are balanced automatically by adding a zero-cost dummy source or destination; the response identifies the dummy route and includes immutable initial-solution snapshots.
 
 ## Production-like JAR
 

@@ -13,7 +13,11 @@ public class LeastCost {
      * <p>
      * Repeatedly choose the currently available cell with minimum cost.
      */
-    public TransTable buildLeastCostSolution(TransTable table) {
+    public void buildLeastCostSolution(TransTable table) {
+        buildLeastCostSolution(table, null);
+    }
+
+    public void buildLeastCostSolution(TransTable table, InitialStepObserver observer) {
         double[] remainingSupply = table.supply().clone();
         double[] remainingDemand = table.demand().clone();
 
@@ -44,6 +48,7 @@ public class LeastCost {
 
             remainingSupply[best.row()] -= quantity;
             remainingDemand[best.column()] -= quantity;
+            if (observer != null) observer.onStep(best.row(), best.column(), quantity, table);
 
             boolean rowSatisfied = Math.abs(remainingSupply[best.row()]) <= TransTable.EPS;
 
@@ -63,7 +68,6 @@ public class LeastCost {
              * zero basic variable(s).
              */
         }
-        return table;
     }
 
     private TransTableCell findLeastCostAvailableCell(
@@ -86,8 +90,8 @@ public class LeastCost {
                 }
 
                 var candidate = new TransTableCell(i, j);
-                if (best == null || table.costs()[i][j] < table.costs()[best.row()][best.column()] - TransTable.EPS
-                        || (Math.abs(table.costs()[i][j] - table.costs()[best.row()][best.column()]) <= TransTable.EPS
+                if (best == null || table.costAt(i, j) < table.costAt(best.row(), best.column()) - TransTable.EPS
+                        || (Math.abs(table.costAt(i, j) - table.costAt(best.row(), best.column())) <= TransTable.EPS
                         && Util.compareCells(candidate, best) < 0
                 )) {
                     best = candidate;

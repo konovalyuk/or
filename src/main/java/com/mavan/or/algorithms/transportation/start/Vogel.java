@@ -20,7 +20,11 @@ public class Vogel {
      * Select the row/column with the greatest penalty, and then allocate
      * as much as possible to its least-cost cell.
      */
-    public TransTable buildVogelSolution(TransTable table) {
+    public void buildVogelSolution(TransTable table) {
+        buildVogelSolution(table, null);
+    }
+
+    public void buildVogelSolution(TransTable table, InitialStepObserver observer) {
         double[] remainingSupply = table.supply().clone();
         double[] remainingDemand = table.demand().clone();
 
@@ -95,6 +99,7 @@ public class Vogel {
 
             remainingSupply[selectedCell.row()] -= quantity;
             remainingDemand[selectedCell.column()] -= quantity;
+            if (observer != null) observer.onStep(selectedCell.row(), selectedCell.column(), quantity, table);
 
             boolean rowSatisfied = Math.abs(remainingSupply[selectedCell.row()]) <= TransTable.EPS;
 
@@ -110,7 +115,6 @@ public class Vogel {
                 remainingColumns--;
             }
         }
-        return table;
     }
 
 
@@ -132,7 +136,7 @@ public class Vogel {
                     continue;
                 }
 
-                double value = table.costs()[i][j];
+                double value = table.costAt(i, j);
 
                 if (value < smallest) {
                     secondSmallest = smallest;
@@ -170,7 +174,7 @@ public class Vogel {
                     continue;
                 }
 
-                double value = table.costs()[i][j];
+                double value = table.costAt(i, j);
 
                 if (value < smallest) {
                     secondSmallest = smallest;
@@ -201,8 +205,8 @@ public class Vogel {
             TransTableCell candidate = new TransTableCell(row, j);
 
             if (best == null
-                    || table.costs()[row][j] < table.costs()[best.row()][best.column()] - TransTable.EPS
-                    || (Math.abs(table.costs()[row][j] - table.costs()[best.row()][best.column()]) <= TransTable.EPS
+                    || table.costAt(row, j) < table.costAt(best.row(), best.column()) - TransTable.EPS
+                    || (Math.abs(table.costAt(row, j) - table.costAt(best.row(), best.column())) <= TransTable.EPS
                     && Util.compareCells(candidate, best) < 0)) {
                 best = candidate;
             }
@@ -222,8 +226,8 @@ public class Vogel {
             TransTableCell candidate = new TransTableCell(i, column);
 
             if (best == null
-                    || table.costs()[i][column] < table.costs()[best.row()][best.column()] - TransTable.EPS
-                    || (Math.abs(table.costs()[i][column] - table.costs()[best.row()][best.column()]) <= TransTable.EPS
+                    || table.costAt(i, column) < table.costAt(best.row(), best.column()) - TransTable.EPS
+                    || (Math.abs(table.costAt(i, column) - table.costAt(best.row(), best.column())) <= TransTable.EPS
                     && Util.compareCells(candidate, best) < 0)) {
                 best = candidate;
             }

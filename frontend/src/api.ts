@@ -3,8 +3,51 @@ export type InitialMethod = 'NORTHWEST_CORNER' | 'LEAST_COST' | 'VOGEL_APPROXIMA
 export interface TransportationResult {
   initialMethod: InitialMethod
   initialAllocation: number[][]
+  initialBasic: boolean[][]
+  initialCost: number
+  initialSteps: InitialSolutionStep[]
   optimalAllocation: number[][]
+  optimalBasic: boolean[][]
   optimalCost: number
+  costs: number[][]
+  supply: number[]
+  demand: number[]
+  sourceLabels: string[]
+  destinationLabels: string[]
+  dummyAdded: boolean
+  dummyType: 'NONE' | 'SOURCE' | 'DESTINATION'
+  dummyIndex: number
+  dummyQuantity: number
+  states: TransportationState[]
+}
+
+export interface InitialSolutionStep {
+  step: number
+  selectedRow: number
+  selectedColumn: number
+  allocatedAmount: number
+  allocation: number[][]
+  basic: boolean[][]
+  remainingSupply: number[]
+  remainingDemand: number[]
+  totalCost: number
+}
+
+export interface TransportationState {
+  iteration: number
+  allocationBefore: number[][]
+  basicBefore: boolean[][]
+  u: number[]
+  v: number[]
+  evaluation: number[][]
+  entering: { row: number; column: number } | null
+  leaving: { row: number; column: number } | null
+  cycle: { row: number; column: number }[]
+  theta: number
+  allocationAfter: number[][]
+  basicAfter: boolean[][]
+  totalCost: number
+  optimal: boolean
 }
 
 export async function solveTransportation(problem: {

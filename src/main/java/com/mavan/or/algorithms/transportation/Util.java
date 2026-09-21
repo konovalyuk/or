@@ -3,7 +3,10 @@ package com.mavan.or.algorithms.transportation;
 import com.mavan.or.algorithms.transportation.datamodels.TransTable;
 import com.mavan.or.algorithms.transportation.datamodels.TransTableCell;
 
-public class Util {
+public final class Util {
+
+    private Util() {
+    }
 
     public static double sum(double[] values) {
         double result = 0.0;

@@ -13,7 +13,7 @@ COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
 COPY src ./src
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-RUN chmod +x gradlew && ./gradlew bootJar -x test
+RUN chmod +x gradlew && ./gradlew bootJar -x test -x buildFrontend
 
 # Runtime image contains only the application JAR and a Java runtime.
 FROM eclipse-temurin:25-jre-alpine

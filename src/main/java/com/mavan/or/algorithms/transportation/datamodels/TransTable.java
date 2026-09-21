@@ -23,6 +23,8 @@ public record TransTable(double[][] costs, double[] supply, double[] demand, dou
 
         TransValidation.validateBalancedProblem(supply, demand);
 
+        TransValidation.validateWorkingState(allocation, basic, costs.length, costs[0].length);
+
         this.allocation = Util.deepCopy(allocation);
         this.basic = Util.deepCopy(basic);
     }
@@ -33,6 +35,18 @@ public record TransTable(double[][] costs, double[] supply, double[] demand, dou
 
     public int getColumns() {
         return costs[0].length;
+    }
+
+    public double costAt(int row, int column) {
+        return costs[row][column];
+    }
+
+    public double supplyAt(int row) {
+        return supply[row];
+    }
+
+    public double demandAt(int column) {
+        return demand[column];
     }
 
 }

@@ -12,7 +12,11 @@ public class NorthwestCorner {
      * Start from the northwest cell and satisfy the current row/column
      * as much as possible.
      */
-    public TransTable buildNorthwestCornerSolution(TransTable table) {
+    public void buildNorthwestCornerSolution(TransTable table) {
+        buildNorthwestCornerSolution(table, null);
+    }
+
+    public void buildNorthwestCornerSolution(TransTable table, InitialStepObserver observer) {
         double[] remainingSupply = table.supply().clone();
         double[] remainingDemand = table.demand().clone();
 
@@ -26,6 +30,7 @@ public class NorthwestCorner {
 
             remainingSupply[i] -= quantity;
             remainingDemand[j] -= quantity;
+            if (observer != null) observer.onStep(i, j, quantity, table);
 
             boolean rowSatisfied = Math.abs(remainingSupply[i]) <= TransTable.EPS;
             boolean columnSatisfied = Math.abs(remainingDemand[j]) <= TransTable.EPS;
@@ -39,7 +44,6 @@ public class NorthwestCorner {
                 j++;
             }
         }
-        return table;
     }
 
 }

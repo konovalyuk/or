@@ -1,24 +1,103 @@
 package com.mavan.or.service;
 
-import com.mavan.or.algorithms.lp.SimplexIteration;
+import com.mavan.or.algorithms.transportation.TransSolver;
+import com.mavan.or.algorithms.transportation.datamodels.TransResult;
+import com.mavan.or.algorithms.transportation.datamodels.TransTable;
+import com.mavan.or.algorithms.transportation.start.ETransBasicSolution;
+import com.mavan.or.algorithms.transportation.TransValidation;
+import com.mavan.or.web.TransportationSolveRequest;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.List;
+import java.util.Arrays;
 
 @Service
 public class SolverService {
 
-    public List<SimplexIteration> solve() {
+    private final TransSolver transSolver;
 
-        // Пока демонстрационные данные.
-        // Здесь будет вызов настоящего SimplexSolver.
-
-        return List.of(
-                new SimplexIteration(0, BigDecimal.ZERO),
-                new SimplexIteration(1, new BigDecimal("12")),
-                new SimplexIteration(2, new BigDecimal("18")),
-                new SimplexIteration(3, new BigDecimal("21"))
-        );
+    public SolverService(TransSolver transSolver) {
+        this.transSolver = transSolver;
     }
+
+    public TransResult transportationTask(TransportationSolveRequest request) {
+        if (request == null) throw new IllegalArgumentException("Request body is required.");
+        TransValidation.validateInput(request.costs(), request.supply(), request.demand());
+        ETransBasicSolution method = request.initialMethod() == null
+                ? ETransBasicSolution.VOGEL_APPROXIMATION
+                : request.initialMethod();
+        Balance balance = balance(request.costs(), request.supply(), request.demand());
+        int rows = balance.costs.length;
+        int columns = balance.costs[0].length;
+        TransTable table = new TransTable(
+                balance.costs, balance.supply, balance.demand,
+                new double[rows][columns], new boolean[rows][columns]
+        );
+        return transSolver.solve(method, null, table, balance.sourceLabels, balance.destinationLabels,
+                balance.dummyAdded, balance.dummyType, balance.dummyIndex, balance.dummyQuantity);
+    }
+
+    private Balance balance(double[][] originalCosts, double[] originalSupply, double[] originalDemand) {
+        double totalSupply = Arrays.stream(originalSupply).sum();
+        double totalDemand = Arrays.stream(originalDemand).sum();
+        double difference = totalSupply - totalDemand;
+        if (Math.abs(difference) <= TransTable.EPS) {
+            return new Balance(copy(originalCosts), originalSupply.clone(), originalDemand.clone(),
+                    labels("Source", originalCosts.length), labels("Destination", originalCosts[0].length),
+                    false, "NONE", -1, 0.0);
+        }
+
+        if (difference > 0) {
+            double[][] costs = new double[originalCosts.length][originalCosts[0].length + 1];
+            for (int i = 0; i < originalCosts.length; i++) System.arraycopy(originalCosts[i], 0, costs[i], 0, originalCosts[i].length);
+            double[] demand = Arrays.copyOf(originalDemand, originalDemand.length + 1);
+            demand[demand.length - 1] = difference;
+            return new Balance(costs, originalSupply.clone(), demand,
+                    labels("Source", originalCosts.length), append(labels("Destination", originalDemand.length), "Dummy Destination"),
+                    true, "DESTINATION", demand.length - 1, difference);
+        }
+
+        double[][] costs = new double[originalCosts.length + 1][originalCosts[0].length];
+        for (int i = 0; i < originalCosts.length; i++) System.arraycopy(originalCosts[i], 0, costs[i], 0, originalCosts[i].length);
+        double[] supply = Arrays.copyOf(originalSupply, originalSupply.length + 1);
+        supply[supply.length - 1] = -difference;
+        return new Balance(costs, supply, originalDemand.clone(),
+                append(labels("Source", originalSupply.length), "Dummy Source"), labels("Destination", originalDemand.length),
+                true, "SOURCE", supply.length - 1, -difference);
+    }
+
+    private static double[][] copy(double[][] source) {
+        double[][] result = new double[source.length][];
+        for (int i = 0; i < source.length; i++) result[i] = source[i].clone();
+        return result;
+    }
+
+    private static String[] labels(String prefix, int size) {
+        String[] result = new String[size];
+        for (int i = 0; i < size; i++) result[i] = prefix + " " + (i + 1);
+        return result;
+    }
+
+    private static String[] append(String[] values, String value) {
+        String[] result = Arrays.copyOf(values, values.length + 1);
+        result[result.length - 1] = value;
+        return result;
+    }
+
+    private record Balance(double[][] costs, double[] supply, double[] demand,
+                           String[] sourceLabels, String[] destinationLabels,
+                           boolean dummyAdded, String dummyType, int dummyIndex, double dummyQuantity) {
+        private Balance {
+            for (int i = 0; i < costs.length; i++) {
+                if (costs[i].length > 0 && i >= 0) {
+                    // Newly allocated dummy cells are already zero; this copy keeps the input immutable.
+                    costs[i] = costs[i].clone();
+                }
+            }
+            supply = supply.clone();
+            demand = demand.clone();
+            sourceLabels = sourceLabels.clone();
+            destinationLabels = destinationLabels.clone();
+        }
+    }
+
 }

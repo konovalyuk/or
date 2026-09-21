@@ -45,8 +45,7 @@ public class TransRunner {
                 throw new AssertionError("SunRay validation failed for " + method + ": expected " + expectedOptimalCost + ", actual " + result.optimalCost());
             }
 
-            var transValidation = new TransValidation();
-            transValidation.validateSolution(result.optimalAllocation(), table);
+            TransValidation.validateSolution(result.optimalAllocation(), table);
             System.out.println("Optimal cost = " + result.optimalCost());
         }
 
@@ -78,11 +77,6 @@ public class TransRunner {
         var table = new TransTable(costs, supply, demand, new double[costs.length][costs[0].length], new boolean[costs.length][costs[0].length]);
         ConsoleRenderer renderer = new ConsoleRenderer(table);
 
-        /*
-         * Build the initial solution once so that it can be printed
-         * separately before iterative transportation-simplex steps.
-         */
-
         var basicSolution = new TransBasicSolution(new NorthwestCorner(), new LeastCost(), new Vogel());
         TransSolver solver = new TransSolver(
                 basicSolution,
@@ -99,12 +93,6 @@ public class TransRunner {
                 solver.calculateTotalCost(table)
         );
 
-        /*
-         * Continue through the transportation algorithm.
-         *
-         * solve() constructs the initial solution again internally;
-         * this method is intended only as a console demonstration.
-         */
         TransResult result = solver.solve(method, renderer::printState, table);
 
         renderer.printFinalSummary(result);
@@ -171,7 +159,7 @@ public class TransRunner {
     }
 
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         Locale.setDefault(Locale.US);
 
         if (args.length > 0 && "validate".equalsIgnoreCase(args[0])) {
@@ -206,9 +194,9 @@ public class TransRunner {
             TransResult result = solver.solve(method,
                     state -> {
                         if (state.iteration() == 0 && state.optimal()) {
-                            renderer.printInitial(method, state.allocation(), state.basic(), state.totalCost());
+                            renderer.printInitial(method, state.allocationAfter(), state.basicAfter(), state.totalCost());
                         } else if (state.iteration() == 0) {
-                            renderer.printInitial(method, state.allocation(), state.basic(), state.totalCost());
+                            renderer.printInitial(method, state.allocationAfter(), state.basicAfter(), state.totalCost());
                         } else {
                             renderer.printState(state);
                         }

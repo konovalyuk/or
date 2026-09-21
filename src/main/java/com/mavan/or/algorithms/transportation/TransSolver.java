@@ -69,14 +69,32 @@ public class TransSolver {
     }
 
     public TransResult solve(ETransBasicSolution method, IterationObserver observer, TransTable table) {
+        return solve(method, observer, table, defaultLabels("S", table.getRows()),
+                defaultLabels("D", table.getColumns()), false, "NONE", -1, 0.0);
+    }
+
+    public TransResult solve(ETransBasicSolution method, IterationObserver observer, TransTable table,
+                             String[] sourceLabels, String[] destinationLabels,
+                             boolean dummyAdded, String dummyType, int dummyIndex, double dummyQuantity) {
         Objects.requireNonNull(method, "Basic solution method must not be null.");
 
-        table = basicSolution.buildInitialBasicSolution(method, table);
-        table = repairDegeneracy(table);
+        List<com.mavan.or.algorithms.transportation.datamodels.InitialSolutionStep> initialSteps = new ArrayList<>();
+        basicSolution.buildInitialBasicSolution(method, table, (row, column, amount, current) ->
+                initialSteps.add(new com.mavan.or.algorithms.transportation.datamodels.InitialSolutionStep(
+                        initialSteps.size() + 1, row, column, amount,
+                        current.allocation(), current.basic(), remainingSupply(current),
+                        remainingDemand(current), calculateTotalCost(current))));
+        repairDegeneracy(table);
 
         double[][] initialAllocation = Util.deepCopy(table.allocation());
         boolean[][] initialBasic = Util.deepCopy(table.basic());
         double initialCost = calculateTotalCost(table);
+        if (initialSteps.isEmpty() || !sameAllocation(initialSteps.get(initialSteps.size() - 1).allocation(), table.allocation())
+                || !sameBasic(initialSteps.get(initialSteps.size() - 1).basic(), table.basic())) {
+            initialSteps.add(new com.mavan.or.algorithms.transportation.datamodels.InitialSolutionStep(
+                    initialSteps.size() + 1, -1, -1, 0.0, table.allocation(), table.basic(),
+                    remainingSupply(table), remainingDemand(table), initialCost));
+        }
 
         List<TransState> states = new ArrayList<>();
 
@@ -92,15 +110,25 @@ public class TransSolver {
 
             TransTableCell entering = potentials.findEnteringVariable(u, v, evaluation, table);
             if (entering == null) {
-                var optimalState = new TransState(iteration, table.allocation(), table.basic(), u, v, evaluation, null, null, Collections.emptyList(), 0.0, calculateTotalCost(table), true);
+                var snapshot = Util.deepCopy(table.allocation());
+                var basicSnapshot = Util.deepCopy(table.basic());
+                var optimalState = new TransState(iteration, snapshot, basicSnapshot, u, v, evaluation,
+                        null, null, Collections.emptyList(), 0.0,
+                        snapshot, basicSnapshot, calculateTotalCost(table), true);
                 states.add(optimalState);
 
                 if (observer != null) {
                     observer.onState(optimalState);
                 }
 
-                return new TransResult(method, initialAllocation, initialBasic, initialCost, states, table.allocation(), table.basic(), u, v, calculateTotalCost(table));
+                return new TransResult(method, initialAllocation, initialBasic, initialCost, initialSteps, states,
+                        table.allocation(), table.basic(), u, v, calculateTotalCost(table), table.costs(),
+                        table.supply(), table.demand(), sourceLabels, destinationLabels,
+                        dummyAdded, dummyType, dummyIndex, dummyQuantity);
             }
+
+            double[][] allocationBefore = Util.deepCopy(table.allocation());
+            boolean[][] basicBefore = Util.deepCopy(table.basic());
 
             /*
              * Construct the closed loop:
@@ -179,11 +207,13 @@ public class TransSolver {
              * after a pivot we may have fewer than m+n-1 basic variables.
              * Add independent zero basic variables where necessary.
              */
-            table = repairDegeneracy(table);
+            repairDegeneracy(table);
 
             double newCost = calculateTotalCost(table);
 
-            var state = new TransState(++iteration, table.allocation(), table.basic(), u, v, evaluation, entering, leaving, cycle, theta, newCost, false);
+            var state = new TransState(++iteration, allocationBefore, basicBefore, u, v, evaluation,
+                    entering, leaving, cycle, theta,
+                    table.allocation(), table.basic(), newCost, false);
 
             states.add(state);
 
@@ -191,6 +221,36 @@ public class TransSolver {
                 observer.onState(state);
             }
         }
+    }
+
+    private double[] remainingSupply(TransTable table) {
+        double[] remaining = table.supply().clone();
+        for (int i = 0; i < table.getRows(); i++) {
+            for (int j = 0; j < table.getColumns(); j++) remaining[i] -= table.allocation()[i][j];
+        }
+        return remaining;
+    }
+
+    private double[] remainingDemand(TransTable table) {
+        double[] remaining = table.demand().clone();
+        for (int j = 0; j < table.getColumns(); j++) {
+            for (int i = 0; i < table.getRows(); i++) remaining[j] -= table.allocation()[i][j];
+        }
+        return remaining;
+    }
+
+    private boolean sameAllocation(double[][] left, double[][] right) {
+        return Arrays.deepEquals(left, right);
+    }
+
+    private boolean sameBasic(boolean[][] left, boolean[][] right) {
+        return Arrays.deepEquals(left, right);
+    }
+
+    private String[] defaultLabels(String prefix, int length) {
+        String[] labels = new String[length];
+        for (int i = 0; i < length; i++) labels[i] = prefix + (i + 1);
+        return labels;
     }
 
     /**
@@ -208,7 +268,7 @@ public class TransSolver {
      * A candidate is accepted only if adding it does NOT create a cycle.
      * Thus the basis remains a spanning tree.
      */
-    public TransTable repairDegeneracy(TransTable table) {
+    public void repairDegeneracy(TransTable table) {
         int required = table.getRows() + table.getColumns() - 1;
         int current = Util.countBasicVariables(table);
 
@@ -242,7 +302,6 @@ public class TransSolver {
 
             current++;
         }
-        return table;
     }
 
     private boolean createsCycleIfAdded(int row, int column, TransTable table) {
@@ -260,7 +319,7 @@ public class TransSolver {
 
         for (int i = 0; i < table.getRows(); i++) {
             for (int j = 0; j < table.getColumns(); j++) {
-                result += table.allocation()[i][j] * table.costs()[i][j];
+                result += table.allocation()[i][j] * table.costAt(i, j);
             }
         }
 

@@ -16,11 +16,15 @@ public class TransBasicSolution {
         this.vogel = vogel;
     }
 
-    public TransTable buildInitialBasicSolution(ETransBasicSolution method, TransTable table) {
-        return switch (method) {
-            case NORTHWEST_CORNER -> northwestCorner.buildNorthwestCornerSolution(table);
-            case LEAST_COST -> leastCost.buildLeastCostSolution(table);
-            case VOGEL_APPROXIMATION -> vogel.buildVogelSolution(table);
-        };
+    public void buildInitialBasicSolution(ETransBasicSolution method, TransTable table) {
+        buildInitialBasicSolution(method, table, null);
+    }
+
+    public void buildInitialBasicSolution(ETransBasicSolution method, TransTable table, InitialStepObserver observer) {
+        switch (method) {
+            case NORTHWEST_CORNER -> northwestCorner.buildNorthwestCornerSolution(table, observer);
+            case LEAST_COST -> leastCost.buildLeastCostSolution(table, observer);
+            case VOGEL_APPROXIMATION -> vogel.buildVogelSolution(table, observer);
+        }
     }
 }
