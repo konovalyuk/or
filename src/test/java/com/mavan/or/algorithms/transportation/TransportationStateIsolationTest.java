@@ -59,6 +59,22 @@ class TransportationStateIsolationTest {
     }
 
     @Test
+    void textbookTieRuleKeepsTheZeroBasicCellAtX14() {
+        var basics = new TransBasicSolution(new NorthwestCorner(), new LeastCost(), new Vogel());
+        var solver = new TransSolver(basics, new TransClosedLoop(), new TransPotentials());
+        var table = new TransTable(COSTS, SUPPLY, DEMAND,
+                new double[COSTS.length][COSTS[0].length], new boolean[COSTS.length][COSTS[0].length]);
+
+        var leastCost = solver.solve(ETransBasicSolution.LEAST_COST, table);
+        assertTrue(leastCost.initialBasic()[0][3]);
+
+        table = new TransTable(COSTS, SUPPLY, DEMAND,
+                new double[COSTS.length][COSTS[0].length], new boolean[COSTS.length][COSTS[0].length]);
+        var vogel = solver.solve(ETransBasicSolution.VOGEL_APPROXIMATION, table);
+        assertTrue(vogel.initialBasic()[0][3]);
+    }
+
+    @Test
     void resultAndStateAccessorsReturnDefensiveCopies() {
         TransResult result = solve();
         double optimalCell = result.optimalAllocation()[0][0];

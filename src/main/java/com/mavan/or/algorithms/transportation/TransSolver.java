@@ -84,7 +84,7 @@ public class TransSolver {
                         initialSteps.size() + 1, row, column, amount,
                         current.allocation(), current.basic(), remainingSupply(current),
                         remainingDemand(current), calculateTotalCost(current))));
-        repairDegeneracy(table);
+        repairDegeneracy(table, true);
 
         double[][] initialAllocation = Util.deepCopy(table.allocation());
         boolean[][] initialBasic = Util.deepCopy(table.basic());
@@ -269,6 +269,10 @@ public class TransSolver {
      * Thus the basis remains a spanning tree.
      */
     public void repairDegeneracy(TransTable table) {
+        repairDegeneracy(table, false);
+    }
+
+    private void repairDegeneracy(TransTable table, boolean initialTextbookBasis) {
         int required = table.getRows() + table.getColumns() - 1;
         int current = Util.countBasicVariables(table);
 
@@ -288,7 +292,8 @@ public class TransSolver {
                     }
 
                     var currentCandidate = new TransTableCell(i, j);
-                    if (candidate == null || Util.compareCells(currentCandidate, candidate) < 0) {
+                    if (candidate == null || (initialTextbookBasis && preferTextbookZeroBasic(currentCandidate, candidate, table))
+                            || (!initialTextbookBasis && Util.compareCells(currentCandidate, candidate) < 0)) {
                         candidate = currentCandidate;
                     }
                 }
@@ -302,6 +307,22 @@ public class TransSolver {
 
             current++;
         }
+    }
+
+    private boolean preferTextbookZeroBasic(TransTableCell candidate, TransTableCell current, TransTable table) {
+        boolean candidateExhausted = rowIsExhausted(candidate.row(), table);
+        boolean currentExhausted = rowIsExhausted(current.row(), table);
+        if (candidateExhausted != currentExhausted) return candidateExhausted;
+        if (candidateExhausted && candidate.row() == current.row() && candidate.column() != current.column()) {
+            return candidate.column() > current.column();
+        }
+        return Util.compareCells(candidate, current) < 0;
+    }
+
+    private boolean rowIsExhausted(int row, TransTable table) {
+        double allocated = 0.0;
+        for (int column = 0; column < table.getColumns(); column++) allocated += table.allocation()[row][column];
+        return Math.abs(allocated - table.supplyAt(row)) <= TransTable.EPS;
     }
 
     private boolean createsCycleIfAdded(int row, int column, TransTable table) {
