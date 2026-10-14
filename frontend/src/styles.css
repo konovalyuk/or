@@ -39,5 +39,25 @@ nav { margin-left:auto; display:flex; gap:.25rem; } nav button { border:0; backg
 .solution-table th .potential-header { display:block; margin-top:.25rem; color:#1d4ed8; font-size:.7rem; font-weight:700; }.solution-table .source-potential-cell { min-width:130px; background:#f8fafc; }.solution-table .potential-side { display:block; margin-top:.22rem; color:#1d4ed8; font-size:.72rem; font-weight:700; white-space:nowrap; }.pivot-details { margin-top:1rem; border-radius:12px; padding:.85rem 1rem; background:#f8fafc; }.pivot-details h4 { margin:.1rem 0 .45rem; color:#334155; }.pivot-details p { margin:.3rem 0; color:#475569; font-size:.88rem; }
 .dimension-controls { display:flex; align-items:end; flex-wrap:wrap; gap:.65rem; margin-bottom:1rem; }.dimension-controls label:not(.file-button) { display:grid; gap:.3rem; color:#475569; font-size:.78rem; font-weight:700; }.dimension-controls input { width:5rem; border:1px solid #cbd5e1; border-radius:8px; padding:.5rem; }.file-button { position:relative; overflow:hidden; }.file-button input { position:absolute; inset:0; opacity:0; cursor:pointer; }.hero-actions { display:flex; flex-wrap:wrap; gap:.6rem; }.iteration-cost { margin-bottom:.75rem; color:#166534; font-size:.95rem; }.graph-card { margin-top:1rem; border:1px solid #e2e8f0; border-radius:14px; padding:.8rem; background:#fbfdff; width:100%; }.graph-card h4 { margin:.1rem 0 .5rem; color:#334155; }.transport-graph { width:100%; max-width:100%; height:auto; display:block; }.graph-edge-label { fill:#475569; font-size:10px; }.graph-node-label { fill:#1e3a5f; font-size:11px; font-weight:800; }.graph-side-label { fill:#475569; font-size:10px; }.graph-legend { color:#64748b; font-size:.72rem; margin:.45rem 0 0; }
 .table-graph-stack { display:block; width:100%; }.table-graph-stack > .table-scroll { width:100%; }.table-graph-stack > .graph-card { margin-top:1rem; }
+.result-grid > .result-card { margin-top: 0; height: 100%; }
+.lp-card .mode-icon { background:#dcfce7; color:#166534; }
+.lp-layout { display:grid; grid-template-columns:minmax(240px, 300px) 1fr; gap:1rem; align-items:start; }
+.equation-list { display:flex; flex-direction:column; gap:.45rem; margin:0; padding:0; list-style:none; }
+.equation-button { width:100%; text-align:left; border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:.6rem .7rem; cursor:pointer; color:#1e3a5f; }
+.equation-button.active { border-color:#1e3a5f; background:#eff6ff; }
+.equation-button:disabled { opacity:.45; cursor:not-allowed; }
+.equation-button small { display:block; color:#64748b; font-size:.68rem; letter-spacing:.04em; margin-bottom:.15rem; }
+.lp-graph { border:1px solid #e2e8f0; border-radius:14px; background:#fbfdff; padding:.4rem .4rem .2rem; }
+.lp-plot { width:100%; height:auto; display:block; }
+.lp-axis { stroke:#334155; stroke-width:1.2; }
+.lp-grid { stroke:#e2e8f0; stroke-width:1; }
+.lp-tick { fill:#64748b; font-size:11px; }
+.lp-region { fill:#dbeafe; stroke:none; }
+.lp-readout { display:flex; flex-wrap:wrap; gap:1.4rem; margin-top:.9rem; padding-top:.9rem; border-top:1px solid #e2e8f0; }
+.lp-readout span { display:block; color:#64748b; font-size:.75rem; }
+.lp-readout strong { color:#102a43; font-size:1.45rem; }
+.lp-note { color:#64748b; font-size:.85rem; margin:.7rem 0 0; }
+.cell-select { border:1px solid #cbd5e1; border-radius:8px; padding:.42rem; background:#fff; color:#172033; }
+@media (max-width:760px) { .lp-layout { grid-template-columns:1fr; } }
 @media print { body { background:#fff; } .topbar, footer, .hero-actions, .dimension-controls, .solver-actions, .step-controls, .timeline, .replay-caption, .mode-grid, .principles { display:none !important; } .page-width { max-width:none; padding:0; }.content { padding:0; }.card { border:0; box-shadow:none; break-inside:avoid; padding:.4rem 0; }.editor-card { display:block !important; }.history, .replay-card, .result-grid { break-before:page; }.next-table { break-before:auto; }.graph-card { break-inside:avoid; }.transport-graph { min-width:0; }.solution-table { min-width:0; font-size:9px; }.solution-table td { min-width:60px; height:48px; }.cell-cost, .cell-evaluation, .potential-header, .potential-side { font-size:7px !important; } }
 @media (max-width:760px) { nav button { padding:.45rem .4rem; font-size:.72rem; }.hero-symbol { display:none; }.mode-grid, .calculation-grid { grid-template-columns:1fr; }.principles { align-items:flex-start; flex-direction:column; gap:.8rem; }.principles > div { align-items:flex-start; flex-direction:column; gap:.6rem; }.result-banner { align-items:flex-start; flex-direction:column; }.result-banner > strong { font-size:1.8rem; }.step-controls { flex-wrap:wrap; }.step-controls .timeline { order:3; flex-basis:100%; } }
