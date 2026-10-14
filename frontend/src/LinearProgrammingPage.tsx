@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
-import { solveGraphical, type GraphicalResult, type GraphicalStep, type GraphPoint, type LpRelation, type LpSense } from './api'
+import { applicableSimplexMethods, solveGraphical, solveSimplex, type GraphicalResult, type GraphicalStep, type GraphPoint, type LpRelation, type LpSense, type SimplexMethod, type SimplexResult } from './api'
 import { navigate } from './App'
+import { SimplexView } from './SimplexView'
+
+const methodLabel: Record<SimplexMethod, string> = {
+  ALL_SLACK: 'All-slack',
+  M_METHOD: 'M-method',
+  TWO_PHASE: 'Two-phase',
+  DUAL_SIMPLEX: 'Dual simplex',
+}
 
 const reddyObjective = [5, 4]
 const reddyCoefficients = [[6, 4], [1, 2], [-1, 1], [0, 1]]
@@ -166,11 +174,16 @@ export function LinearProgrammingPage() {
   const [relations, setRelations] = useState<LpRelation[]>([...reddyRelations])
   const [rhs, setRhs] = useState([...reddyRhs])
   const [result, setResult] = useState<GraphicalResult | null>(null)
+  const [simplexResult, setSimplexResult] = useState<SimplexResult | null>(null)
+  const [approach, setApproach] = useState<'GRAPHICAL' | 'SIMPLEX'>('GRAPHICAL')
+  const [method, setMethod] = useState<SimplexMethod>('ALL_SLACK')
+  const [methods, setMethods] = useState<SimplexMethod[]>(['ALL_SLACK'])
   const [stepIndex, setStepIndex] = useState(0)
   const [unlocked, setUnlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [solving, setSolving] = useState(false)
   const twoVariables = objective.length === 2
+  const effective = twoVariables ? approach : 'SIMPLEX'
 
   useEffect(() => {
     if (!result) return
@@ -178,12 +191,27 @@ export function LinearProgrammingPage() {
     if (lastConstraint && stepIndex >= lastConstraint.index) setUnlocked(true)
   }, [result, stepIndex])
 
-  function clearResult() { setResult(null); setStepIndex(0); setUnlocked(false) }
+  useEffect(() => {
+    let cancelled = false
+    const handle = window.setTimeout(() => {
+      applicableSimplexMethods({ sense, objective, coefficients, relations, rhs }).then(list => {
+        if (cancelled || list.length === 0) return
+        setMethods(list)
+        setMethod(current => list.includes(current) ? current : list[0])
+      }).catch(() => {})
+    }, 150)
+    return () => { cancelled = true; window.clearTimeout(handle) }
+  }, [sense, objective, coefficients, relations, rhs])
+
+  function clearResult() { setResult(null); setSimplexResult(null); setStepIndex(0); setUnlocked(false) }
 
   function loadExample() {
     setSense('MAXIMIZE')
     setVariableCount(2)
     setConstraintCount(4)
+    setApproach('GRAPHICAL')
+    setMethod('ALL_SLACK')
+    setMethods(['ALL_SLACK'])
     setObjective([...reddyObjective])
     setCoefficients(reddyCoefficients.map(row => [...row]))
     setRelations([...reddyRelations])
@@ -209,10 +237,17 @@ export function LinearProgrammingPage() {
     setError(null)
     setSolving(true)
     try {
-      const solved = await solveGraphical({ sense, objective, coefficients, relations, rhs })
-      setResult(solved)
-      setStepIndex(0)
-      setUnlocked(false)
+      if (effective === 'GRAPHICAL') {
+        const solved = await solveGraphical({ sense, objective, coefficients, relations, rhs })
+        setResult(solved)
+        setSimplexResult(null)
+        setStepIndex(0)
+        setUnlocked(false)
+      } else {
+        const solved = await solveSimplex({ sense, objective, coefficients, relations, rhs, method })
+        setSimplexResult(solved)
+        setResult(null)
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to solve the linear program.')
     } finally {
@@ -228,9 +263,9 @@ export function LinearProgrammingPage() {
   return <>
     <section className="hero compact-hero">
       <div>
-        <span className="eyebrow">CHAPTER 2 · GRAPHICAL LP</span>
-        <h2>Watch the feasible region take shape.</h2>
-        <p>Two variables, any number of constraints. Nonnegativity stays on, as in Taha’s graphical method.</p>
+        <span className="eyebrow">LINEAR PROGRAMMING · CHAPTERS 2–4</span>
+        <h2>Graph the region, or read the simplex tableau.</h2>
+        <p>Two variables can be drawn as a feasible region. Any size can be solved with the simplex method, the M-method, two-phase, or dual simplex.</p>
       </div>
       <div className="hero-actions"><button className="button secondary" onClick={() => navigate('/study')}>All topics</button></div>
     </section>
@@ -266,14 +301,17 @@ export function LinearProgrammingPage() {
           </tbody>
         </table>
       </div>
-      <p className="lp-note">x1, x2, … ≥ 0</p>
+      <p className="lp-note">x1, x2, … ≥ 0. The graphical method is available for exactly two variables.</p>
       <div className="solver-actions">
-        <span />
-        <button className="button primary" onClick={solve} disabled={!twoVariables || solving}>{solving ? 'Solving…' : 'Solve and graph'}</button>
+        <div className="solver-choices">
+          {twoVariables && <label>Solution<select value={approach} onChange={event => { setApproach(event.target.value as 'GRAPHICAL' | 'SIMPLEX'); clearResult() }}><option value="GRAPHICAL">Graphical</option><option value="SIMPLEX">Algebraic (simplex)</option></select></label>}
+          {effective === 'SIMPLEX' && <label>Simplex method<select value={method} onChange={event => { setMethod(event.target.value as SimplexMethod); clearResult() }}>{methods.map(item => <option key={item} value={item}>{methodLabel[item]}</option>)}</select></label>}
+        </div>
+        <button className="button primary" onClick={solve} disabled={solving || methods.length === 0}>{solving ? 'Solving…' : effective === 'GRAPHICAL' ? 'Solve and graph' : 'Solve'}</button>
       </div>
-      {!twoVariables && <p className="lp-note">This screen graphs the two-variable model from Chapter 2. The variable count stays available for the simplex method.</p>}
       {error && <p className="notice error">{error}</p>}
     </section>
+    {simplexResult && <SimplexView result={simplexResult} />}
     {result && step && <section className="card">
       <div className="section-heading">
         <div>

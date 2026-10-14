@@ -2,6 +2,8 @@ package com.mavan.or.service;
 
 import com.mavan.or.algorithms.lp.GraphicalLpSolver;
 import com.mavan.or.algorithms.lp.GraphicalResult;
+import com.mavan.or.algorithms.lp.Simplex;
+import com.mavan.or.algorithms.lp.SimplexResult;
 import com.mavan.or.algorithms.transportation.TransSolver;
 import com.mavan.or.algorithms.transportation.datamodels.TransResult;
 import com.mavan.or.algorithms.transportation.datamodels.TransTable;
@@ -9,20 +11,24 @@ import com.mavan.or.algorithms.transportation.start.ETransBasicSolution;
 import com.mavan.or.algorithms.transportation.TransValidation;
 import com.mavan.or.models.LinearProgram;
 import com.mavan.or.web.GraphicalSolveRequest;
+import com.mavan.or.web.SimplexSolveRequest;
 import com.mavan.or.web.TransportationSolveRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Service
 public class SolverService {
 
     private final TransSolver transSolver;
     private final GraphicalLpSolver graphicalLpSolver;
+    private final Simplex simplex;
 
-    public SolverService(TransSolver transSolver, GraphicalLpSolver graphicalLpSolver) {
+    public SolverService(TransSolver transSolver, GraphicalLpSolver graphicalLpSolver, Simplex simplex) {
         this.transSolver = transSolver;
         this.graphicalLpSolver = graphicalLpSolver;
+        this.simplex = simplex;
     }
 
     public TransResult transportationTask(TransportationSolveRequest request) {
@@ -47,6 +53,25 @@ public class SolverService {
             throw new IllegalArgumentException("Request body is required.");
         var program = LinearProgram.of(request.sense(), request.objective(), request.coefficients(), request.relations(), request.rhs());
         return graphicalLpSolver.solve(program);
+    }
+
+    public List<String> simplexMethods(GraphicalSolveRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request body is required.");
+        }
+        return Simplex.applicable(program(request.sense(), request.objective(), request.coefficients(), request.relations(), request.rhs()));
+    }
+
+    public SimplexResult simplexTask(SimplexSolveRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request body is required.");
+        }
+        var program = program(request.sense(), request.objective(), request.coefficients(), request.relations(), request.rhs());
+        return simplex.solve(program, request.method());
+    }
+
+    private static LinearProgram program(String sense, double[] objective, double[][] coefficients, String[] relations, double[] rhs) {
+        return LinearProgram.of(sense, objective, coefficients, relations, rhs);
     }
 
     private Balance balance(double[][] originalCosts, double[] originalSupply, double[] originalDemand) {

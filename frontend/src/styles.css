@@ -61,3 +61,17 @@ nav { margin-left:auto; display:flex; gap:.25rem; } nav button { border:0; backg
 @media (max-width:760px) { .lp-layout { grid-template-columns:1fr; } }
 @media print { body { background:#fff; } .topbar, footer, .hero-actions, .dimension-controls, .solver-actions, .step-controls, .timeline, .replay-caption, .mode-grid, .principles { display:none !important; } .page-width { max-width:none; padding:0; }.content { padding:0; }.card { border:0; box-shadow:none; break-inside:avoid; padding:.4rem 0; }.editor-card { display:block !important; }.history, .replay-card, .result-grid { break-before:page; }.next-table { break-before:auto; }.graph-card { break-inside:avoid; }.transport-graph { min-width:0; }.solution-table { min-width:0; font-size:9px; }.solution-table td { min-width:60px; height:48px; }.cell-cost, .cell-evaluation, .potential-header, .potential-side { font-size:7px !important; } }
 @media (max-width:760px) { nav button { padding:.45rem .4rem; font-size:.72rem; }.hero-symbol { display:none; }.mode-grid, .calculation-grid { grid-template-columns:1fr; }.principles { align-items:flex-start; flex-direction:column; gap:.8rem; }.principles > div { align-items:flex-start; flex-direction:column; gap:.6rem; }.result-banner { align-items:flex-start; flex-direction:column; }.result-banner > strong { font-size:1.8rem; }.step-controls { flex-wrap:wrap; }.step-controls .timeline { order:3; flex-basis:100%; } }
+.solver-choices { display:flex; flex-wrap:wrap; gap:1rem; align-items:end; }
+.simplex-table { width:100%; border-collapse:collapse; min-width:640px; font-variant-numeric:tabular-nums; }
+.simplex-table th, .simplex-table td { border:1px solid #e2e8f0; padding:.45rem .55rem; text-align:right; }
+.simplex-table th:first-child, .simplex-table td:first-child { text-align:left; }
+.simplex-table thead th { background:#f8fafc; color:#334155; font-size:.78rem; }
+.simplex-table td.enter-col, .simplex-table th.enter-col { background:#dcfce7; }
+.simplex-table td.leave-row, .simplex-table th.leave-row { background:#fee2e2; }
+.simplex-table td.pivot-cell { background:#fde68a; box-shadow:inset 0 0 0 2px #b45309; font-weight:700; }
+.simplex-table td.ratio-selected { color:#9a3412; font-weight:700; }
+.gauss-block { margin-top:1rem; }
+.gauss-block h4 { margin:0 0 .4rem; color:#102a43; }
+.gauss-list { margin:0; padding-left:1.2rem; color:#334155; }
+.gauss-list li { margin:.25rem 0; }
+.plan-table { margin-top:.4rem; }
