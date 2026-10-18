@@ -2,6 +2,9 @@ package com.mavan.or.algorithms.lp;
 
 import com.mavan.or.algorithms.lp.SimplexResult.Cell;
 import com.mavan.or.algorithms.lp.SimplexResult.ConstraintRow;
+import com.mavan.or.algorithms.lp.SimplexResult.DualConstraint;
+import com.mavan.or.algorithms.lp.SimplexResult.DualProblem;
+import com.mavan.or.algorithms.lp.SimplexResult.DualVariable;
 import com.mavan.or.algorithms.lp.SimplexResult.Iteration;
 import com.mavan.or.algorithms.lp.SimplexResult.Range;
 import com.mavan.or.algorithms.lp.SimplexResult.Ratio;
@@ -20,10 +23,11 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Primal simplex, the big-M method, the two-phase method, and the dual simplex.
+ * Primal simplex, the big-M method, the two-phase method, the dual simplex, and the generalized simplex.
  * <p>
  * Hamdy A. Taha, Operations Research: An Introduction, 10th ed.,
- * Chapter 3 (the simplex method and sensitivity) and Section 4.4.1 (dual simplex).
+ * Chapter 3 (the simplex method and sensitivity), Section 4.4.1 (dual simplex),
+ * and Section 4.4.2 (generalized simplex).
  * <p>
  * The objective row is stored as z − c·x = 0, so a maximization of 5x1 + 4x2
  * starts at −5, −4. An artificial penalty is the symbolic term m·M + constant,
@@ -36,6 +40,7 @@ public class Simplex {
     public static final String M_METHOD = "M_METHOD";
     public static final String TWO_PHASE = "TWO_PHASE";
     public static final String DUAL_SIMPLEX = "DUAL_SIMPLEX";
+    public static final String GENERALIZED = "GENERALIZED";
 
     public static final String OPTIMAL = "OPTIMAL";
     public static final String ALTERNATIVE_OPTIMA = "ALTERNATIVE_OPTIMA";
@@ -73,6 +78,17 @@ public class Simplex {
             Outcome outcome = dualLoop(model, iterations, next);
             return finish(program, model, chosen, outcome, iterations);
         }
+        if (GENERALIZED.equals(chosen)) {
+            installObjective(model, false);
+            if (dualLeaving(model) >= 0) {
+                Outcome feasibility = restoreFeasibility(model, iterations, next);
+                if (!OPTIMAL.equals(feasibility.status)) {
+                    return finish(program, model, chosen, feasibility, iterations);
+                }
+            }
+            Outcome outcome = primalLoop(model, iterations, next, "PRIMAL", !model.maximize);
+            return finish(program, model, chosen, outcome, iterations);
+        }
         installObjective(model, M_METHOD.equals(chosen));
         Outcome outcome = primalLoop(model, iterations, next, "PRIMAL", !model.maximize);
         if (OPTIMAL.equals(outcome.status) && (artificialValue(model) > EPS || Math.abs(model.zRhs.m) > EPS)) {
@@ -92,6 +108,9 @@ public class Simplex {
         }
         methods.add(M_METHOD);
         methods.add(TWO_PHASE);
+        if (generalizedStart(program)) {
+            methods.add(GENERALIZED);
+        }
         return List.copyOf(methods);
     }
 
@@ -135,6 +154,7 @@ public class Simplex {
         }
         View view = capture(program, model);
         Sensitivity sensitivity = sensitivity(program, model);
+        DualProblem dual = dualProblem(program, model);
         String status = OPTIMAL;
         String message = optimalMessage(view.degenerate());
         int alternative = alternativeColumn(model);
@@ -160,7 +180,7 @@ public class Simplex {
             }
         }
         return new SimplexResult(status, method, program.sense().name(), view.objective(), view.degenerate(), message,
-                view.variables(), view.constraints(), List.copyOf(iterations), sensitivity);
+                view.variables(), view.constraints(), List.copyOf(iterations), sensitivity, dual);
     }
 
     private Outcome primalLoop(Model model, List<Iteration> iterations, int[] next, String phase, boolean minimizing) {
@@ -217,6 +237,47 @@ public class Simplex {
             }
         }
         return new Outcome(CYCLING, "The iteration limit was reached before a stopping condition.");
+    }
+
+    /**
+     * Section 4.4.2. The ordinary dual ratio is not used: the starting objective is not optimal,
+     * so any negative pivot entry restores feasibility. The lowest index breaks ties.
+     */
+    private Outcome restoreFeasibility(Model model, List<Iteration> iterations, int[] next) {
+        Set<String> seen = new HashSet<>();
+        seen.add(model.basisKey());
+        int cap = Math.max(200, 50 * (model.cols() + model.rows() + 1));
+        while (iterations.size() < cap) {
+            int leave = dualLeaving(model);
+            if (leave < 0) {
+                return new Outcome(OPTIMAL, "Feasibility restored.");
+            }
+            int enter = lowestNegative(model, leave);
+            if (enter < 0) {
+                iterations.add(snapshot(model, next[0]++, "GENERALIZED", null, leave, false, false,
+                        "The pivot row has no negative coefficient, so the model has no feasible solution."));
+                return new Outcome(INFEASIBLE, "The pivot row has no negative coefficient, so the model has no feasible solution.");
+            }
+            iterations.add(snapshot(model, next[0]++, "GENERALIZED", enter, leave, false, false,
+                    "Feasibility is restored first. The entering variable is the lowest-index negative entry in the pivot row."));
+            model.pivot(leave, enter);
+            if (!seen.add(model.basisKey())) {
+                iterations.add(snapshot(model, next[0]++, "GENERALIZED", null, null, false, false,
+                        "This basis already appeared, so the simplex method is cycling."));
+                return new Outcome(CYCLING, "A basis repeated, so the simplex method is cycling.");
+            }
+        }
+        return new Outcome(CYCLING, "The iteration limit was reached before a stopping condition.");
+    }
+
+    private static int lowestNegative(Model model, int leave) {
+        boolean[] basic = model.basicFlags();
+        for (int column = 0; column < model.cols(); column++) {
+            if (!basic[column] && model.A[leave][column] < -EPS) {
+                return column;
+            }
+        }
+        return -1;
     }
 
     private void exchangeArtificials(Model model, List<Iteration> iterations, int[] next) {
@@ -368,7 +429,10 @@ public class Simplex {
         List<Ratio> rowRatios = null;
         List<Ratio> columnRatios = null;
         List<String> operations = List.of();
-        if (dual && leave != null) {
+        if ("GENERALIZED".equals(phase)) {
+            rowRatios = null;
+            columnRatios = null;
+        } else if (dual && leave != null) {
             columnRatios = dualRatios(model, leave, enter);
         } else if (!dual && enter != null) {
             rowRatios = primalRatios(model, enter, leave);
@@ -459,6 +523,74 @@ public class Simplex {
             constraints.add(new ConstraintRow(index + 1, relation.name(), rhs, deviation, kind));
         }
         return new View(model.zRhs.c, model.degenerate(), variables, constraints);
+    }
+
+    private DualProblem dualProblem(LinearProgram program, Model model) {
+        double[] prices = shadowPrices(program, model);
+        if (prices == null) {
+            return null;
+        }
+        boolean maximize = program.sense() == Sense.MAXIMIZE;
+        List<DualVariable> variables = new ArrayList<>();
+        double objective = 0;
+        for (int index = 0; index < program.constraints(); index++) {
+            String sign = switch (program.relation(index)) {
+                case EQ -> "UNRESTRICTED";
+                case LE -> maximize ? "NONNEGATIVE" : "NONPOSITIVE";
+                case GE -> maximize ? "NONPOSITIVE" : "NONNEGATIVE";
+            };
+            variables.add(new DualVariable("y" + (index + 1), program.rhs(index), prices[index], sign));
+            objective += program.rhs(index) * prices[index];
+        }
+        List<DualConstraint> constraints = new ArrayList<>();
+        String relation = maximize ? "GE" : "LE";
+        for (int variable = 0; variable < program.variables(); variable++) {
+            List<Double> coefficients = new ArrayList<>();
+            for (int row = 0; row < program.constraints(); row++) {
+                coefficients.add(snap(program.coefficient(row, variable)));
+            }
+            constraints.add(new DualConstraint("x" + (variable + 1), List.copyOf(coefficients), relation, program.objective(variable)));
+        }
+        return new DualProblem(maximize ? "MINIMIZE" : "MAXIMIZE", List.copyOf(variables), List.copyOf(constraints), snap(objective));
+    }
+
+    /** Method 2 prices, with the same row-flip factor the sensitivity dual price already uses. */
+    private double[] shadowPrices(LinearProgram program, Model model) {
+        int constraints = program.constraints();
+        double[] shadow = new double[constraints];
+        int rows = model.rows();
+        if (rows == 0) {
+            return shadow;
+        }
+        double[][] inverse = invert(basisMatrix(model));
+        if (inverse == null) {
+            return null;
+        }
+        double[] basicCost = new double[rows];
+        for (int row = 0; row < rows; row++) {
+            int column = model.basis[row];
+            if (model.structural[column]) {
+                basicCost[row] = model.cost[model.structuralIndex[column]];
+            }
+        }
+        double[] prices = new double[rows];
+        for (int column = 0; column < rows; column++) {
+            for (int row = 0; row < rows; row++) {
+                prices[column] += basicCost[row] * inverse[row][column];
+            }
+        }
+        for (int index = 0; index < constraints; index++) {
+            double dual = 0;
+            boolean represented = false;
+            for (int row = 0; row < rows; row++) {
+                if (model.origin[row] == index) {
+                    represented = true;
+                    dual += prices[row] * model.factor[row];
+                }
+            }
+            shadow[index] = represented ? snap(dual) : 0;
+        }
+        return shadow;
     }
 
     private Sensitivity sensitivity(LinearProgram program, Model model) {
@@ -718,7 +850,7 @@ public class Simplex {
 
     private static Model build(LinearProgram program, String method) {
         List<Draft> drafts = new ArrayList<>();
-        if (DUAL_SIMPLEX.equals(method)) {
+        if (DUAL_SIMPLEX.equals(method) || GENERALIZED.equals(method)) {
             for (int index = 0; index < program.constraints(); index++) {
                 if (allZero(program, index)) {
                     continue;
@@ -830,9 +962,14 @@ public class Simplex {
     }
 
     private static boolean dualStart(LinearProgram program) {
-        if (!objectiveReady(program)) {
-            return false;
-        }
+        return objectiveReady(program) && negativeSlackStart(program);
+    }
+
+    private static boolean generalizedStart(LinearProgram program) {
+        return !objectiveReady(program) && negativeSlackStart(program);
+    }
+
+    private static boolean negativeSlackStart(LinearProgram program) {
         boolean negative = false;
         for (int index = 0; index < program.constraints(); index++) {
             if (allZero(program, index)) {
@@ -920,6 +1057,7 @@ public class Simplex {
             case "M_METHOD", "M", "BIG_M", "BIGM" -> M_METHOD;
             case "TWO_PHASE", "TWOPHASE" -> TWO_PHASE;
             case "DUAL_SIMPLEX", "DUAL" -> DUAL_SIMPLEX;
+            case "GENERALIZED", "GENERALIZED_SIMPLEX" -> GENERALIZED;
             default -> throw new IllegalArgumentException("Unknown simplex method.");
         };
     }
@@ -930,7 +1068,7 @@ public class Simplex {
 
     private static SimplexResult bare(LinearProgram program, String method, String status, String message, List<Iteration> iterations) {
         return new SimplexResult(status, method, program.sense().name(), null, false, message,
-                List.of(), List.of(), List.copyOf(iterations), null);
+                List.of(), List.of(), List.copyOf(iterations), null, null);
     }
 
     private static String optimalMessage(boolean degenerate) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { SimplexCell, SimplexIteration, SimplexRatio, SimplexResult } from './api'
+import type { DualProblem, SimplexCell, SimplexIteration, SimplexRatio, SimplexResult } from './api'
 
 function formatNumber(value: number) {
   if (!Number.isFinite(value)) return 'infinity'
@@ -45,7 +45,48 @@ function heading(iteration: SimplexIteration) {
   if (iteration.phase === 'PHASE_I') return `Phase I · iteration ${iteration.number}`
   if (iteration.phase === 'PHASE_II') return `Phase II · iteration ${iteration.number}`
   if (iteration.phase === 'DUAL') return `Dual simplex · iteration ${iteration.number}`
+  if (iteration.phase === 'GENERALIZED') return `Generalized simplex · iteration ${iteration.number}`
   return `Iteration ${iteration.number}`
+}
+
+function signText(sign: string) {
+  if (sign === 'NONPOSITIVE') return '≤ 0'
+  if (sign === 'UNRESTRICTED') return 'unrestricted'
+  return '≥ 0'
+}
+
+function dualExpression(coefficients: number[], names: string[]) {
+  const parts: string[] = []
+  coefficients.forEach((coefficient, index) => {
+    if (Math.abs(coefficient) < 5e-4) return
+    const magnitude = formatNumber(Math.abs(coefficient))
+    const name = names[index] ?? `y${index + 1}`
+    if (parts.length === 0) {
+      parts.push(coefficient < 0 ? `−${magnitude} ${name}` : `${magnitude} ${name}`)
+    } else {
+      parts.push(`${coefficient < 0 ? '−' : '+'} ${magnitude} ${name}`)
+    }
+  })
+  return parts.length === 0 ? '0' : parts.join(' ')
+}
+
+function DualModel({ dual }: { dual: DualProblem }) {
+  const names = dual.variables.map(variable => variable.name)
+  const sense = dual.sense === 'MINIMIZE' ? 'Minimize' : 'Maximize'
+  const mark = (relation: string) => relation === 'LE' ? '≤' : '≥'
+  return <section className="card replay-card">
+    <div className="section-heading">
+      <div>
+        <span className="eyebrow">DUAL MODEL</span>
+        <h3>{sense} the dual</h3>
+        <p>Built from the primal table. The prices are Method 2, y = cB B⁻¹. At this optimum, w equals z.</p>
+      </div>
+    </div>
+    <p className="lp-note">{sense} w = {dualExpression(dual.variables.map(variable => variable.objectiveCoefficient), names)}</p>
+    {dual.constraints.map(constraint => <p className="lp-note" key={constraint.name}>{constraint.name}: {dualExpression(constraint.coefficients, names)} {mark(constraint.relation)} {formatNumber(constraint.rhs)}</p>)}
+    <p className="lp-note">{dual.variables.map(variable => `${variable.name} ${signText(variable.sign)}`).join(', ')}</p>
+    <p className="lp-note">y = ({dual.variables.map(variable => formatNumber(variable.value)).join(', ')}), w = {formatNumber(dual.objectiveValue)}</p>
+  </section>
 }
 
 function bodyClass(iteration: SimplexIteration, row: number, column: number) {
@@ -166,5 +207,6 @@ export function SimplexView({ result }: { result: SimplexResult }) {
         </table>
       </div>
     </section>}
+    {solved && result.dual && <DualModel dual={result.dual} />}
   </>
 }

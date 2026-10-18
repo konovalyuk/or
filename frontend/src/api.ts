@@ -114,7 +114,7 @@ export async function solveGraphical(problem: {
   return response.json()
 }
 
-export type SimplexMethod = 'ALL_SLACK' | 'M_METHOD' | 'TWO_PHASE' | 'DUAL_SIMPLEX'
+export type SimplexMethod = 'ALL_SLACK' | 'M_METHOD' | 'TWO_PHASE' | 'DUAL_SIMPLEX' | 'GENERALIZED'
 export type SimplexStatus = 'OPTIMAL' | 'ALTERNATIVE_OPTIMA' | 'INFEASIBLE' | 'UNBOUNDED' | 'CYCLING'
 
 export interface SimplexCell { m: number; constant: number }
@@ -144,7 +144,7 @@ export interface SimplexRange {
 
 export interface SimplexIteration {
   number: number
-  phase: 'PRIMAL' | 'PHASE_I' | 'PHASE_II' | 'DUAL' | 'ALTERNATIVE'
+  phase: 'PRIMAL' | 'PHASE_I' | 'PHASE_II' | 'DUAL' | 'ALTERNATIVE' | 'GENERALIZED'
   objectiveLabel: string
   columns: string[]
   basic: string[]
@@ -162,6 +162,27 @@ export interface SimplexIteration {
   note: string | null
 }
 
+export interface DualVariable {
+  name: string
+  objectiveCoefficient: number
+  value: number
+  sign: 'NONNEGATIVE' | 'NONPOSITIVE' | 'UNRESTRICTED'
+}
+
+export interface DualConstraint {
+  name: string
+  coefficients: number[]
+  relation: LpRelation
+  rhs: number
+}
+
+export interface DualProblem {
+  sense: LpSense
+  variables: DualVariable[]
+  constraints: DualConstraint[]
+  objectiveValue: number
+}
+
 export interface SimplexResult {
   status: SimplexStatus
   method: SimplexMethod
@@ -173,6 +194,7 @@ export interface SimplexResult {
   constraints: SimplexConstraintRow[]
   iterations: SimplexIteration[]
   sensitivity: { variables: SimplexRange[]; constraints: SimplexRange[] } | null
+  dual: DualProblem | null
 }
 
 export async function solveSimplex(problem: {

@@ -8,6 +8,7 @@ const methodLabel: Record<SimplexMethod, string> = {
   M_METHOD: 'M-method',
   TWO_PHASE: 'Two-phase',
   DUAL_SIMPLEX: 'Dual simplex',
+  GENERALIZED: 'Generalized',
 }
 
 const reddyObjective = [5, 4]
@@ -265,7 +266,7 @@ export function LinearProgrammingPage() {
       <div>
         <span className="eyebrow">LINEAR PROGRAMMING · CHAPTERS 2–4</span>
         <h2>Graph the region, or read the simplex tableau.</h2>
-        <p>Two variables can be drawn as a feasible region. Any size can be solved with the simplex method, the M-method, two-phase, or dual simplex.</p>
+        <p>Two variables can be drawn as a feasible region. Any size can be solved with the simplex method, the M-method, two-phase, dual simplex, or the generalized simplex method.</p>
       </div>
       <div className="hero-actions"><button className="button secondary" onClick={() => navigate('/study')}>All topics</button></div>
     </section>

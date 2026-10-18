@@ -3,7 +3,7 @@ package com.mavan.or.algorithms.lp;
 import java.util.List;
 
 /**
- * Tableau trace of a simplex solve, plus the optimal plan and algebraic sensitivity when they exist.
+ * Tableau trace of a simplex solve, plus the optimal plan, algebraic sensitivity, and dual model when they exist.
  */
 public record SimplexResult(
         String status,
@@ -15,7 +15,8 @@ public record SimplexResult(
         List<VariableRow> variables,
         List<ConstraintRow> constraints,
         List<Iteration> iterations,
-        Sensitivity sensitivity
+        Sensitivity sensitivity,
+        DualProblem dual
 ) {
     public record VariableRow(String name, double value, double objectiveCoefficient, double contribution) {
     }
@@ -60,5 +61,18 @@ public record SimplexResult(
     }
 
     public record Sensitivity(List<Range> variables, List<Range> constraints) {
+    }
+
+    /**
+     * Dual built from Taha Table 4.2. {@code value} is the Method 2 price y = cB B^{-1}.
+     * {@code sign} is NONNEGATIVE, NONPOSITIVE, or UNRESTRICTED.
+     */
+    public record DualVariable(String name, double objectiveCoefficient, double value, String sign) {
+    }
+
+    public record DualConstraint(String name, List<Double> coefficients, String relation, double rhs) {
+    }
+
+    public record DualProblem(String sense, List<DualVariable> variables, List<DualConstraint> constraints, double objectiveValue) {
     }
 }

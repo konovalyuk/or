@@ -94,7 +94,7 @@ class SimplexSolverTest {
     void applicableMethodsFollowTheStartingBasis() {
         assertEquals(java.util.List.of(Simplex.ALL_SLACK), Simplex.applicable(reddy()));
         assertEquals(java.util.List.of(Simplex.DUAL_SIMPLEX, Simplex.M_METHOD, Simplex.TWO_PHASE), Simplex.applicable(example441()));
-        assertEquals(java.util.List.of(Simplex.M_METHOD, Simplex.TWO_PHASE), Simplex.applicable(program("MAXIMIZE", new double[]{5}, new double[][]{{1}}, new String[]{"GE"}, new double[]{3})));
+        assertEquals(java.util.List.of(Simplex.M_METHOD, Simplex.TWO_PHASE, Simplex.GENERALIZED), Simplex.applicable(program("MAXIMIZE", new double[]{5}, new double[][]{{1}}, new String[]{"GE"}, new double[]{3})));
         assertEquals(java.util.List.of(Simplex.DUAL_SIMPLEX, Simplex.M_METHOD, Simplex.TWO_PHASE), Simplex.applicable(program("MAXIMIZE", new double[]{-1}, new double[][]{{1}}, new String[]{"GE"}, new double[]{3})));
         assertEquals(java.util.List.of(Simplex.ALL_SLACK), Simplex.applicable(program("MAXIMIZE", new double[]{1}, new double[][]{{-1}}, new String[]{"GE"}, new double[]{-4})));
         assertThrows(IllegalArgumentException.class, () -> solver.solve(reddy(), Simplex.DUAL_SIMPLEX));
