@@ -236,6 +236,59 @@ export async function applicableSimplexMethods(problem: {
   return response.json()
 }
 
+export interface NetworkRequest {
+  nodes: number
+  from: number[]
+  to: number[]
+  value: number[]
+  symbol?: string[]
+  start?: number
+  optimistic?: number[]
+  likely?: number[]
+  pessimistic?: number[]
+  scheduled?: number[]
+}
+
+export interface SpanningLink { from: number; to: number; length: number }
+export interface SpanningIteration { number: number; connected: number[]; unconnected: number[]; candidates: SpanningLink[]; added: SpanningLink | null; length: number }
+export interface SpanningResult { start: number; length: number; connected: boolean; message: string; tree: SpanningLink[]; iterations: SpanningIteration[] }
+
+export interface DijkstraLabel { distance: number | null; predecessor: number | null; status: 'PERMANENT' | 'TEMPORARY' | null }
+export interface DijkstraIteration { number: number; permanentNode: number; labels: DijkstraLabel[] }
+export interface DijkstraRoute { node: number; distance: number | null; nodes: number[] }
+export interface DijkstraResult { source: number; message: string; iterations: DijkstraIteration[]; routes: DijkstraRoute[] }
+
+export interface FloydCell { row: number; column: number }
+export interface FloydIteration { pivot: number; distance: (number | null)[][]; sequence: (number | null)[][]; improved: FloydCell[] }
+export interface FloydRoute { from: number; to: number; distance: number | null; nodes: number[] }
+export interface FloydResult { message: string; iterations: FloydIteration[]; routes: FloydRoute[] }
+
+export interface FlowLabel { node: number; infinite: boolean; amount: number; predecessor: number | null; crossedOut: boolean }
+export interface FlowIteration { number: number; title: string; steps: string[]; labels: FlowLabel[]; path: number[]; flow: number | null; residualBefore: (number | null)[][]; residualAfter: (number | null)[][] }
+export interface FlowArc { from: number; to: number; amount: number }
+export interface FlowResult { flow: number; message: string; arcs: FlowArc[]; iterations: FlowIteration[] }
+
+export interface CpmStep { node: number; value: number; via: number | null; formula: string }
+export interface CpmActivity { from: number; to: number; symbol: string; duration: number; earliestStart: number; latestCompletion: number; totalFloat: number; freeFloat: number; critical: boolean; redFlag: boolean }
+export interface PertArc { from: number; to: number; symbol: string; optimistic: number; likely: number; pessimistic: number; mean: number; variance: number }
+export interface PertNode { node: number; path: number[]; mean: number; standardDeviation: number; scheduled: number | null; deviate: number | null; probability: number | null }
+export interface CpmResult { project: number; criticalPath: number[]; message: string; forward: CpmStep[]; backward: CpmStep[]; activities: CpmActivity[]; estimates: PertArc[]; nodes: PertNode[] }
+
+async function postNetwork<T>(path: string, problem: NetworkRequest): Promise<T> {
+  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(problem) })
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: response.statusText }))
+    throw new Error(body.error ?? 'Unable to solve the network.')
+  }
+  return response.json()
+}
+
+export const solveSpanningTree = (problem: NetworkRequest) => postNetwork<SpanningResult>('/api/network/spanning-tree', problem)
+export const solveDijkstra = (problem: NetworkRequest) => postNetwork<DijkstraResult>('/api/network/shortest-route/dijkstra', problem)
+export const solveFloyd = (problem: NetworkRequest) => postNetwork<FloydResult>('/api/network/shortest-route/floyd', problem)
+export const solveMaxFlow = (problem: NetworkRequest) => postNetwork<FlowResult>('/api/network/max-flow', problem)
+export const solveCpm = (problem: NetworkRequest) => postNetwork<CpmResult>('/api/network/cpm', problem)
+
 export async function solveTransportation(problem: {
   costs: number[][]
   supply: number[]

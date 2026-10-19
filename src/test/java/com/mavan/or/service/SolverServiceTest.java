@@ -2,6 +2,11 @@ package com.mavan.or.service;
 
 import com.mavan.or.algorithms.lp.GraphicalLpSolver;
 import com.mavan.or.algorithms.lp.Simplex;
+import com.mavan.or.algorithms.network.cpm.CriticalPath;
+import com.mavan.or.algorithms.network.maximumflow.FordFulkerson;
+import com.mavan.or.algorithms.network.minimumspanningtree.MinimalSpanningTree;
+import com.mavan.or.algorithms.network.shortestpath.Dijkstra;
+import com.mavan.or.algorithms.network.shortestpath.Floyd;
 import com.mavan.or.algorithms.transportation.TransClosedLoop;
 import com.mavan.or.algorithms.transportation.TransPotentials;
 import com.mavan.or.algorithms.transportation.TransSolver;
@@ -47,6 +52,7 @@ class SolverServiceTest {
     private static SolverService service() {
         return new SolverService(new TransSolver(
                 new TransBasicSolution(new NorthwestCorner(), new LeastCost(), new Vogel()),
-                new TransClosedLoop(), new TransPotentials()), new GraphicalLpSolver(), new Simplex());
+                new TransClosedLoop(), new TransPotentials()), new GraphicalLpSolver(), new Simplex(),
+                new MinimalSpanningTree(), new Dijkstra(), new Floyd(), new FordFulkerson(), new CriticalPath());
     }
 }

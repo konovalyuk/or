@@ -4,13 +4,20 @@ import com.mavan.or.algorithms.lp.GraphicalLpSolver;
 import com.mavan.or.algorithms.lp.GraphicalResult;
 import com.mavan.or.algorithms.lp.Simplex;
 import com.mavan.or.algorithms.lp.SimplexResult;
+import com.mavan.or.algorithms.network.cpm.CriticalPath;
+import com.mavan.or.algorithms.network.maximumflow.FordFulkerson;
+import com.mavan.or.algorithms.network.minimumspanningtree.MinimalSpanningTree;
+import com.mavan.or.algorithms.network.shortestpath.Dijkstra;
+import com.mavan.or.algorithms.network.shortestpath.Floyd;
 import com.mavan.or.algorithms.transportation.TransSolver;
 import com.mavan.or.algorithms.transportation.datamodels.TransResult;
 import com.mavan.or.algorithms.transportation.datamodels.TransTable;
 import com.mavan.or.algorithms.transportation.start.ETransBasicSolution;
 import com.mavan.or.algorithms.transportation.TransValidation;
 import com.mavan.or.models.LinearProgram;
+import com.mavan.or.models.NetworkProblem;
 import com.mavan.or.web.GraphicalSolveRequest;
+import com.mavan.or.web.NetworkSolveRequest;
 import com.mavan.or.web.SimplexSolveRequest;
 import com.mavan.or.web.TransportationSolveRequest;
 import org.springframework.stereotype.Service;
@@ -24,11 +31,23 @@ public class SolverService {
     private final TransSolver transSolver;
     private final GraphicalLpSolver graphicalLpSolver;
     private final Simplex simplex;
+    private final MinimalSpanningTree spanningTree;
+    private final Dijkstra dijkstra;
+    private final Floyd floyd;
+    private final FordFulkerson maximalFlow;
+    private final CriticalPath criticalPath;
 
-    public SolverService(TransSolver transSolver, GraphicalLpSolver graphicalLpSolver, Simplex simplex) {
+    public SolverService(TransSolver transSolver, GraphicalLpSolver graphicalLpSolver, Simplex simplex,
+                         MinimalSpanningTree spanningTree, Dijkstra dijkstra, Floyd floyd,
+                         FordFulkerson maximalFlow, CriticalPath criticalPath) {
         this.transSolver = transSolver;
         this.graphicalLpSolver = graphicalLpSolver;
         this.simplex = simplex;
+        this.spanningTree = spanningTree;
+        this.dijkstra = dijkstra;
+        this.floyd = floyd;
+        this.maximalFlow = maximalFlow;
+        this.criticalPath = criticalPath;
     }
 
     public TransResult transportationTask(TransportationSolveRequest request) {
@@ -60,6 +79,38 @@ public class SolverService {
             throw new IllegalArgumentException("Request body is required.");
         }
         return Simplex.applicable(program(request.sense(), request.objective(), request.coefficients(), request.relations(), request.rhs()));
+    }
+
+    public MinimalSpanningTree.Result spanningTreeTask(NetworkSolveRequest request) {
+        NetworkProblem problem = network(request);
+        return spanningTree.solve(problem, request.start() == null ? 1 : request.start());
+    }
+
+    public Dijkstra.Result dijkstraTask(NetworkSolveRequest request) {
+        return dijkstra.solve(network(request), request.start() == null ? 1 : request.start());
+    }
+
+    public Floyd.Result floydTask(NetworkSolveRequest request) {
+        return floyd.solve(network(request));
+    }
+
+    public FordFulkerson.Result maximalFlowTask(NetworkSolveRequest request) {
+        return maximalFlow.solve(network(request));
+    }
+
+    public CriticalPath.Result criticalPathTask(NetworkSolveRequest request) {
+        NetworkProblem problem = network(request);
+        if (request.optimistic() == null) {
+            return criticalPath.solve(problem);
+        }
+        return criticalPath.solve(problem, request.optimistic(), request.likely(), request.pessimistic(), request.scheduled());
+    }
+
+    private static NetworkProblem network(NetworkSolveRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request body is required.");
+        }
+        return NetworkProblem.of(request.nodes(), request.from(), request.to(), request.value(), request.symbol());
     }
 
     public SimplexResult simplexTask(SimplexSolveRequest request) {
