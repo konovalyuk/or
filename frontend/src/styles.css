@@ -172,3 +172,32 @@ nav { margin-left:auto; display:flex; gap:.25rem; } nav button { border:0; backg
 .gauss-list { margin:0; padding-left:1.2rem; color:#334155; }
 .gauss-list li { margin:.25rem 0; }
 .plan-table { margin-top:.4rem; }
+/* Freight network planner (production) */
+.network-card { grid-column: span 1; }
+.planner-form-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 14px; margin: 22px 0; }
+.planner-form-grid label, .planner-options label { display: grid; gap: 6px; color: #475569; font-size: .82rem; }
+.planner-form-grid input { width: 100%; }
+.planner-options { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+.planner-options label { display: flex; align-items: center; gap: 7px; }
+.metric-grid, .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 18px 0 26px; }
+.metric-grid > div, .scenario-card { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.metric-grid span, .scenario-card span, .scenario-card small { display: block; color: #64748b; font-size: .78rem; }
+.metric-grid b, .scenario-card strong { display: block; margin-top: 5px; color: #0f172a; font-size: 1.05rem; }
+.scenario-card { display: grid; gap: 4px; }
+.scenario-card strong { color: #0f766e; font-size: 1.2rem; }
+@media (max-width: 800px) { .planner-form-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)); } }
+.planner-diagonal { display: block; text-align: center; color: #94a3b8; }
+.planner-timeline { width: 100%; min-width: 760px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.planner-tick { font-size: 10px; fill: #64748b; }
+.planner-row-label { font-size: 11px; fill: #334155; }
+.planner-proof { margin: 0 0 12px; padding-left: 20px; color: #334155; line-height: 1.6; }
+.planner-tag { margin-left: 8px; padding: 2px 7px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: .72rem; }
+.planner-load { white-space: nowrap; font-size: .85rem; }
+.planner-small { font-size: .82rem !important; font-weight: 600; }
+.planner-explanation { margin: 10px 0; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.planner-explanation summary { cursor: pointer; font-weight: 700; color: #0f172a; }
+.planner-explanation ul { margin: 10px 0 2px; padding-left: 20px; color: #334155; line-height: 1.55; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; white-space: pre-wrap; }
+.planner-graph { width: 100%; height: auto; background: #f8fafc; border-radius: 12px; }
+.planner-node-caption { font-size: 14px; font-weight: 700; fill: #0f172a; }
+.planner-node-sub { font-size: 12px; fill: #475569; }
+.planner-edge-label { paint-order: stroke; stroke: #f8fafc; stroke-width: 5px; font-weight: 600; }
