@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BusinessBrief } from './components/BusinessBrief'
 import { loadRoutePlanExample, solveRoutePlan, type PlanResult, type RoutePlanRequest, type RoutePlanResponse, type TerminalJob } from './routePlanApi'
 
 const scenarioNames: Record<string, string> = {
@@ -208,6 +209,7 @@ export function RoutePlannerPage() {
   const plan = response?.plan
   return <>
     <section className="hero compact-hero planner-hero"><div><span className="eyebrow">RTA DUBAI · FREIGHT NETWORK PLANNER</span><h2>One plan for routes, trucks and terminals.</h2><p>Each origin–destination demand is routed directly or through a hub terminal, packed into 20 t, 10 t and 5 t trucks, and scheduled through terminal queues. The planner proves the plan is the cheapest possible.</p></div><div className="hero-actions"><button className="button secondary" onClick={reload}>Reload Dubai example</button></div></section>
+    <BusinessBrief />
     <section className="card editor-card"><div className="section-heading"><div><span className="eyebrow">INPUT DATA</span><h3>Dubai freight network</h3><p>Illustrative data for three Dubai logistics hubs. All values can be edited.</p></div><span className="status ok">{labels.length} terminals · {fmt(totalDemand, 0)} t demand</span></div>
       <MatrixEditor title="Demand (tonnes)" unit="t" locations={labels} values={problem.demandMatrix} onChange={(i, j, value) => update({ demandMatrix: matrixWith(problem.demandMatrix, i, j, value) })} />
       <MatrixEditor title="Road distance (directed)" unit="km" locations={labels} values={problem.distanceMatrix} onChange={(i, j, value) => update({ distanceMatrix: matrixWith(problem.distanceMatrix, i, j, value) })} />

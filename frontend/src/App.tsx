@@ -1,15 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { type InitialMethod, solveTransportation, type InitialSolutionStep, type TransportationResult, type TransportationState } from './api'
+import { methodsForPath } from './applications/catalog'
+import { ApplicationsTrigger } from './components/ApplicationsSheet'
+import { CommandPalette } from './components/CommandPalette'
+import { TopBar } from './components/TopBar'
 import { LinearProgrammingPage } from './LinearProgrammingPage'
+import { navigate } from './navigation'
 import { NetworkPage } from './NetworkPage'
+import { Home } from './pages/Home'
+import { Study } from './pages/Study'
 import { RoutePlannerPage } from './RoutePlannerPage'
 
 const sunRayCosts = [[10, 2, 20, 11], [12, 7, 9, 20], [4, 14, 16, 18]]
 const sunRaySupply = [15, 25, 10]
 const sunRayDemand = [5, 15, 15, 15]
 
-export function navigate(path: string) { window.history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')) }
 function fmt(value: number) { return Number(value).toFixed(2) }
 
 function resizeProblem(costs: number[][], supply: number[], demand: number[], rows: number, columns: number) {
@@ -48,13 +55,6 @@ function TransportationGraph({ allocation, costs, basic, sourceLabels, destinati
   return <div className="graph-card"><h4>Transportation network</h4><svg className="transport-graph" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Transportation network graph"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#64748b" /></marker></defs>{allocation.flatMap((row, i) => row.map((units, j) => { const active = units > 1e-9; const inCycle = cycleHas(i, j); const enteringCell = entering?.row === i && entering.column === j; const leavingCell = leaving?.row === i && leaving.column === j; if (!active && !inCycle && !enteringCell && !leavingCell) return null; const color = enteringCell ? '#16a34a' : leavingCell ? '#dc2626' : inCycle ? '#d97706' : '#2563eb'; return <g key={`${i}-${j}`}><line x1="155" y1={sourceY(i)} x2="565" y2={destinationY(j)} stroke={color} strokeWidth={active ? Math.min(7, 2 + units / 10) : 1.5} markerEnd="url(#arrow)" /><text x="360" y={(sourceY(i) + destinationY(j)) / 2 - 4} textAnchor="middle" className="graph-edge-label">{fmt(units)} · {fmt(costs[i][j])}</text></g> }))}{sourceLabels.map((label, i) => <g key={label}><circle cx="130" cy={sourceY(i)} r="24" fill="#dbeafe" stroke="#2563eb" /><text x="130" y={sourceY(i) + 4} textAnchor="middle" className="graph-node-label">S{i + 1}</text><text x="98" y={sourceY(i) + 4} textAnchor="end" className="graph-side-label">{label}</text></g>)}{destinationLabels.map((label, j) => <g key={label}><circle cx="590" cy={destinationY(j)} r="24" fill="#dcfce7" stroke="#16a34a" /><text x="590" y={destinationY(j) + 4} textAnchor="middle" className="graph-node-label">D{j + 1}</text><text x="622" y={destinationY(j) + 4} className="graph-side-label">{label}</text></g>)}</svg><p className="graph-legend">Blue = allocation · amber = cycle · green/red = entering/leaving</p></div>
 }
 
-function Header({ path }: { path: string }) {
-  const education = path === '/study' || path === '/transportation' || path === '/linear-programming' || path.startsWith('/network') || path === '/education'
-  return <header className="topbar"><div className="page-width brand"><button className="brand-button" onClick={() => navigate('/')}><span className="brand-mark">∑</span><span><b>Operations Research Lab</b><small>Graphical LP · Transportation · Networks</small></span></button><nav><button className={path === '/' ? 'nav-active' : ''} onClick={() => navigate('/')}>Home</button><button className={path === '/production' ? 'nav-active' : ''} onClick={() => navigate('/production')}>Production</button><button className={education ? 'nav-active' : ''} onClick={() => navigate('/study')}>Education</button></nav></div></header>
-}
-
-function Landing() { return <><section className="hero landing-hero"><div><span className="eyebrow">TRANSPORTATION MODEL · CHAPTER 5</span><h2>Make every shipment decision visible.</h2><p>Explore supply, demand and route costs with a practical business view or a step-by-step MODI classroom view.</p></div><div className="hero-symbol">u + v − c</div></section><section className="mode-grid"><article className="card mode-card production-card"><span className="mode-icon">↗</span><h3>Production</h3><p>RTA Dubai freight planner: routes, truck mix, terminal workload and schedule with a proven minimum total cost.</p><button className="button primary" onClick={() => navigate('/production')}>Open production</button></article><article className="card mode-card education-card"><span className="mode-icon">∴</span><h3>Education</h3><p>Open a classroom model: the transportation tableau or a linear program.</p><button className="button secondary" onClick={() => navigate('/study')}>Open education</button></article></section><section className="card principles"><span className="eyebrow">WHAT YOU WILL SEE</span><div><span><b>01</b> Balance the model</span><span><b>02</b> Build a feasible basis</span><span><b>03</b> Improve with MODI</span></div></section></> }
-
 function ProblemEditor({ onSolved, production }: { onSolved: (result: TransportationResult) => void; production: boolean }) {
   const [costs, setCosts] = useState(sunRayCosts.map(row => [...row])); const [supply, setSupply] = useState([...sunRaySupply]); const [demand, setDemand] = useState([...sunRayDemand]); const [rows, setRows] = useState(3); const [columns, setColumns] = useState(4); const [method, setMethod] = useState<InitialMethod>('VOGEL_APPROXIMATION'); const [error, setError] = useState<string | null>(null); const [solving, setSolving] = useState(false)
   const totalSupply = useMemo(() => supply.reduce((a, b) => a + b, 0), [supply]); const totalDemand = useMemo(() => demand.reduce((a, b) => a + b, 0), [demand]);
@@ -88,16 +88,18 @@ function EducationSteps({ result }: { result: TransportationResult }) {
   </section>
 }
 
-function Workspace({ production }: { production: boolean }) { const [result, setResult] = useState<TransportationResult | null>(null); return <><section className="hero compact-hero"><div><span className="eyebrow">{production ? 'PRODUCTION SCENARIO' : 'EDUCATION SCENARIO'}</span><h2>{production ? 'A clear plan for every shipment.' : 'See the transportation algorithm think.'}</h2><p>{production ? 'Focus on routes, truckloads and the minimum total cost.' : 'Follow Taha’s tableau from the initial basis to the final MODI optimum.'}</p></div><div className="hero-actions"><button className="button secondary" onClick={() => navigate('/study')}>All topics</button>{!production && <button className="button secondary" onClick={() => window.print()} disabled={!result}>Print / Save PDF</button>}</div></section><ProblemEditor onSolved={setResult} production={production} />{result && (production ? <ProductionResult result={result} /> : <><section className="result-grid"><article className="card metric"><p>Optimal cost</p><strong>{fmt(result.optimalCost)}</strong><span>{result.initialMethod.replaceAll('_', ' ')}</span></article><ProductionResult result={result} /></section><InitialReplay result={result} /><EducationSteps result={result} /></>)}</> }
-
-function StudyPicker() {
-  return <><section className="hero compact-hero"><div><span className="eyebrow">EDUCATION</span><h2>Choose a model to study.</h2><p>The transportation tableau, a linear program, or a network model from Chapter 6.</p></div><div className="hero-actions"><button className="button secondary" onClick={() => navigate('/')}>Home</button></div></section><section className="mode-grid"><article className="card mode-card education-card"><span className="mode-icon">∴</span><h3>Transportation</h3><p>Replay every initial allocation, potential, evaluation, loop and pivot with the MODI tableau.</p><button className="button primary" onClick={() => navigate('/transportation')}>Open transportation</button></article><article className="card mode-card lp-card"><span className="mode-icon">∠</span><h3>Linear programming</h3><p>Graph the two-variable feasible region, or solve the same model with the simplex tableau.</p><button className="button secondary" onClick={() => navigate('/linear-programming')}>Open linear programming</button></article><article className="card mode-card network-card"><span className="mode-icon">⬡</span><h3>Network models</h3><p>Grow a spanning tree, a shortest route, a maximal flow, or a CPM and PERT schedule on the same graph.</p><button className="button secondary" onClick={() => navigate('/network/spanning-tree')}>Open network models</button></article></section></>
-}
+function Workspace({ production }: { production: boolean }) { const [result, setResult] = useState<TransportationResult | null>(null); return <><section className="hero compact-hero"><div><span className="eyebrow">{production ? 'PRODUCTION SCENARIO' : 'CHAPTER 5 · TRANSPORTATION MODEL'}</span><h2>{production ? 'A clear plan for every shipment.' : 'See the transportation algorithm think.'}</h2><p>{production ? 'Focus on routes, truckloads and the minimum total cost.' : 'Follow Taha’s tableau from the initial basis to the final MODI optimum.'}</p></div><div className="hero-actions"><ApplicationsTrigger methods={methodsForPath('/transportation')} title="Where the transportation model pays off" /><button className="button secondary" onClick={() => navigate('/study')}>All models</button>{!production && <button className="button secondary" onClick={() => window.print()} disabled={!result}>Print / Save PDF</button>}</div></section><ProblemEditor onSolved={setResult} production={production} />{result && (production ? <ProductionResult result={result} /> : <><section className="result-grid"><article className="card metric"><p>Optimal cost</p><strong>{fmt(result.optimalCost)}</strong><span>{result.initialMethod.replaceAll('_', ' ')}</span></article><ProductionResult result={result} /></section><InitialReplay result={result} /><EducationSteps result={result} /></>)}</> }
 
 export function App() {
   const [path, setPath] = useState(window.location.pathname)
-  useEffect(() => { const handler = () => setPath(window.location.pathname); window.addEventListener('popstate', handler); return () => window.removeEventListener('popstate', handler) }, [])
+  useEffect(() => { const handler = () => flushSync(() => setPath(window.location.pathname)); window.addEventListener('popstate', handler); return () => window.removeEventListener('popstate', handler) }, [])
   useEffect(() => { const canonicalPath = path === '/education' ? '/transportation' : null; if (!canonicalPath) return; window.history.replaceState({}, '', canonicalPath); window.dispatchEvent(new PopStateEvent('popstate')) }, [path])
-  const page = path === '/production' ? <RoutePlannerPage /> : path === '/study' ? <StudyPicker /> : path === '/transportation' || path === '/education' ? <Workspace production={false} /> : path === '/linear-programming' ? <LinearProgrammingPage /> : path === '/network' || path.startsWith('/network/') ? <NetworkPage path={path} /> : <Landing />
-  return <div className="app-shell"><Header path={path} /><main className="page-width content">{page}</main><footer>Operations Research Lab · Taha, Operations Research</footer></div>
+  const home = !['/production', '/study', '/transportation', '/education', '/linear-programming', '/network'].includes(path) && !path.startsWith('/network/')
+  const page = path === '/production' ? <RoutePlannerPage /> : path === '/study' ? <Study /> : path === '/transportation' || path === '/education' ? <Workspace production={false} /> : path === '/linear-programming' ? <LinearProgrammingPage /> : path === '/network' || path.startsWith('/network/') ? <NetworkPage path={path} /> : <Home />
+  return <div className={`app-shell ${home ? 'home-shell' : ''}`}>
+    <TopBar path={home ? '/' : path} />
+    {home ? <main>{page}</main> : <main className="page-width content">{page}</main>}
+    <footer className="site-footer"><div className="page-width"><span>Operations Research Lab · decisions backed by mathematics</span><span>Models and cases: H. A. Taha, <i>Operations Research: An Introduction</i>, 10th ed.</span></div></footer>
+    <CommandPalette />
+  </div>
 }

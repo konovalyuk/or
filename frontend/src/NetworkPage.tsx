@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { methodsForPath } from './applications/catalog'
+import { ApplicationsTrigger } from './components/ApplicationsSheet'
+import { navigate } from './navigation'
 import { solveCpm, solveDijkstra, solveFloyd, solveMaxFlow, solveSpanningTree, type CpmResult, type DijkstraResult, type FlowResult, type FloydResult, type SpanningResult } from './api'
 import { NetworkSvg, type FigureEdge, type FigureNode } from './NetworkGraph'
 import { CpmView, DijkstraView, FlowView, FloydView, SpanningView } from './NetworkViews'
@@ -173,7 +176,7 @@ export function NetworkPage({ path }: { path: string }) {
   }
 
   return <>
-    <section className="hero compact-hero"><div><span className="eyebrow">CHAPTER 6 · NETWORK MODELS</span><h2>Watch a network algorithm build its answer.</h2><p>The graph and its tables stay one above the other, so the whole step fits a tablet.</p></div><div className="hero-actions"><button className="button secondary" onClick={() => { window.history.pushState({}, '', '/study'); window.dispatchEvent(new PopStateEvent('popstate')) }}>All topics</button></div></section>
+    <section className="hero compact-hero"><div><span className="eyebrow">CHAPTER 6 · NETWORK MODELS</span><h2>Watch a network algorithm build its answer.</h2><p>The graph and its tables stay one above the other, so the whole step fits a tablet.</p></div><div className="hero-actions"><ApplicationsTrigger key={tabIndex} methods={methodsForPath(`/network/${tabs[tabIndex].slug}`)} title={`Where ${tabs[tabIndex].title.toLowerCase()} pays off`} /><button className="button secondary" onClick={() => navigate('/study')}>All models</button></div></section>
     <div className="network-tabs-wrap">
       <nav className="network-tabs" role="tablist" aria-label="Network models" style={{ '--tab': tabIndex } as CSSProperties}>
         <span className="network-tab-indicator" aria-hidden="true" />

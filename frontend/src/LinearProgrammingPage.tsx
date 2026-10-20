@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { applicableSimplexMethods, solveGraphical, solveSimplex, type GraphicalResult, type GraphicalStep, type GraphPoint, type LpRelation, type LpSense, type SimplexMethod, type SimplexResult } from './api'
-import { navigate } from './App'
+import { methodsForPath } from './applications/catalog'
+import { ApplicationsTrigger } from './components/ApplicationsSheet'
+import { navigate } from './navigation'
 import { SimplexView } from './SimplexView'
 
 const methodLabel: Record<SimplexMethod, string> = {
@@ -268,7 +270,7 @@ export function LinearProgrammingPage() {
         <h2>Graph the region, or read the simplex tableau.</h2>
         <p>Two variables can be drawn as a feasible region. Any size can be solved with the simplex method, the M-method, two-phase, dual simplex, or the generalized simplex method.</p>
       </div>
-      <div className="hero-actions"><button className="button secondary" onClick={() => navigate('/study')}>All topics</button></div>
+      <div className="hero-actions"><ApplicationsTrigger methods={methodsForPath('/linear-programming')} title="Where linear programming pays off" /><button className="button secondary" onClick={() => navigate('/study')}>All models</button></div>
     </section>
     <section className="card editor-card">
       <div className="section-heading">
