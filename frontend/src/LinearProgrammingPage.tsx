@@ -266,7 +266,7 @@ export function LinearProgrammingPage() {
   return <>
     <section className="hero compact-hero">
       <div>
-        <span className="eyebrow">LINEAR PROGRAMMING · CHAPTERS 2–4</span>
+        <span className="eyebrow">LINEAR PROGRAMMING</span>
         <h2>Graph the region, or read the simplex tableau.</h2>
         <p>Two variables can be drawn as a feasible region. Any size can be solved with the simplex method, the M-method, two-phase, dual simplex, or the generalized simplex method.</p>
       </div>
@@ -275,7 +275,7 @@ export function LinearProgrammingPage() {
     <section className="card editor-card">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">REDDY MIKKS BY DEFAULT</span>
+          <span className="eyebrow">STEP 1 · PROBLEM DATA</span>
           <h3>Linear program</h3>
           <p>Enter the objective, then each structural constraint. Variables stay nonnegative.</p>
         </div>

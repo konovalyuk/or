@@ -36,7 +36,7 @@ function ApplicationsSheet({ apps, methods, title, onClose }: { apps: Applicatio
         <button className="sheet-close" onClick={onClose} aria-label="Close" data-autofocus>✕</button>
         <span className="eyebrow">{methods.map(m => METHODS[m].label).join(' · ')}</span>
         <h3>{title ?? 'Where this model pays off'}</h3>
-        <p>{apps.length} applications from Taha’s <i>Operations Research</i>{documented ? `, ${documented} with documented results` : ''}.</p>
+        <p>{apps.length} <i>Operations Research</i> applications{documented ? `, ${documented} with documented results` : ''}.</p>
         {industries.length > 1 && <div className="chip-row">
           <button className={`filter-chip ${industry === null ? 'active' : ''}`} onClick={() => setIndustry(null)}>All</button>
           {industries.map(item => <button key={item} className={`filter-chip ${industry === item ? 'active' : ''}`} onClick={() => setIndustry(item)}>{INDUSTRIES[item].label}</button>)}
@@ -65,7 +65,7 @@ export function UseRow({ app, industry, open, onToggle, onNavigate }: { app: App
           <p className="companies">{app.documented ? 'Case: ' : 'Could benefit: '}{companiesFor(app, industry).join(', ')}</p>
           <div className="actions">
             {app.documented && <span className="pill documented">Documented result</span>}
-            <span className="pill source">Taha · {app.source}</span>
+            <span className="pill source">{app.source}</span>
             {route && !here && <button className="link-button" onClick={() => { onNavigate?.(); navigate(route) }}>Try it live →</button>}
           </div>
         </div>

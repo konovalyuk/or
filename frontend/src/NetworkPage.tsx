@@ -53,10 +53,10 @@ function editorEdges(draft: NetworkDraft, kind: NetworkKind): FigureEdge[] {
 }
 
 const tabs: { slug: string; kind: NetworkKind; title: string; caption: string; icon: string }[] = [
-  { slug: 'spanning-tree', kind: 'SPANNING_TREE', title: 'Minimal spanning tree', caption: '6.2 · Prim growth', icon: '⟁' },
-  { slug: 'shortest-route', kind: 'DIJKSTRA', title: 'Shortest route', caption: '6.3 · Dijkstra and Floyd', icon: '⇢' },
-  { slug: 'max-flow', kind: 'MAX_FLOW', title: 'Maximal flow', caption: '6.4 · Labeling', icon: '≋' },
-  { slug: 'critical-path', kind: 'CPM', title: 'Critical path', caption: '6.5 · CPM and PERT', icon: '◆' },
+  { slug: 'spanning-tree', kind: 'SPANNING_TREE', title: 'Minimal spanning tree', caption: 'Prim growth', icon: '⟁' },
+  { slug: 'shortest-route', kind: 'DIJKSTRA', title: 'Shortest route', caption: 'Dijkstra and Floyd', icon: '⇢' },
+  { slug: 'max-flow', kind: 'MAX_FLOW', title: 'Maximal flow', caption: 'Labeling', icon: '≋' },
+  { slug: 'critical-path', kind: 'CPM', title: 'Critical path', caption: 'CPM and PERT', icon: '◆' },
 ]
 
 function tabOf(kind: NetworkKind) {
@@ -176,7 +176,7 @@ export function NetworkPage({ path }: { path: string }) {
   }
 
   return <>
-    <section className="hero compact-hero"><div><span className="eyebrow">CHAPTER 6 · NETWORK MODELS</span><h2>Watch a network algorithm build its answer.</h2><p>The graph and its tables stay one above the other, so the whole step fits a tablet.</p></div><div className="hero-actions"><ApplicationsTrigger key={tabIndex} methods={methodsForPath(`/network/${tabs[tabIndex].slug}`)} title={`Where ${tabs[tabIndex].title.toLowerCase()} pays off`} /><button className="button secondary" onClick={() => navigate('/study')}>All models</button></div></section>
+    <section className="hero compact-hero"><div><span className="eyebrow">NETWORK MODELS</span><h2>Watch a network algorithm build its answer.</h2><p>The graph and its tables stay one above the other, so the whole step fits a tablet.</p></div><div className="hero-actions"><ApplicationsTrigger key={tabIndex} methods={methodsForPath(`/network/${tabs[tabIndex].slug}`)} title={`Where ${tabs[tabIndex].title.toLowerCase()} pays off`} /><button className="button secondary" onClick={() => navigate('/study')}>All models</button></div></section>
     <div className="network-tabs-wrap">
       <nav className="network-tabs" role="tablist" aria-label="Network models" style={{ '--tab': tabIndex } as CSSProperties}>
         <span className="network-tab-indicator" aria-hidden="true" />
@@ -195,7 +195,7 @@ export function NetworkPage({ path }: { path: string }) {
       <div className="network-stack">
         <NetworkSvg positions={draft.positions} nodes={nodes} edges={editorEdges(draft, kind)} interactive onBackground={addNode} onNode={connect} onMove={move} onEdge={(from, to) => { setSelected({ from, to }); setAnchor(null) }} />
         <div className="dimension-controls">
-          <button className="button secondary" onClick={() => { setDraft(cloneDraft(bookExample(kind))); setSelected(null); setAnchor(null); setSolved(null) }}>Load book example</button>
+          <button className="button secondary" onClick={() => { setDraft(cloneDraft(bookExample(kind))); setSelected(null); setAnchor(null); setSolved(null) }}>Load example</button>
           <button className="button secondary" onClick={removeSelected} disabled={selected == null && anchor == null}>Delete selected</button>
         </div>
         {selectedArc && <ArcForm draft={draft} kind={kind} arc={selectedArc} onChange={setDraft} />}
