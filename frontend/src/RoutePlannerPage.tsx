@@ -110,6 +110,18 @@ function novaPoshtaProblem(current: RoutePlanRequest): RoutePlanRequest {
   }
 }
 
+function clockText(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
+function WaitingPanel({ seconds }: { seconds: number }) {
+  return <div className="wait-panel">
+    <span className="wait-mark" aria-hidden><span /></span>
+    <div><strong>Proving the optimum.</strong><p aria-live="polite">This usually takes a few minutes.</p></div>
+    <b className="wait-clock">{clockText(seconds)}</b>
+  </div>
+}
+
 function Unit({ children }: { children: string }) {
   return <small className="th-unit">{children}</small>
 }
@@ -311,6 +323,7 @@ export function RoutePlannerPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [solving, setSolving] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
   const [dataset, setDataset] = useState<Dataset>('dubai')
   const loadDubai = () => {
     setResponse(null); setError(null)
@@ -319,6 +332,13 @@ export function RoutePlannerPage() {
       .catch(e => setError(e instanceof Error ? e.message : 'Unable to load the example.'))
   }
   useEffect(() => { loadDubai().finally(() => setLoading(false)) }, [])
+  useEffect(() => {
+    if (!solving) return
+    const started = Date.now()
+    setElapsed(0)
+    const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 250)
+    return () => window.clearInterval(timer)
+  }, [solving])
   if (loading) return <section className="card"><p>Loading the Dubai network…</p></section>
   if (!problem) return <section className="card"><p className="notice error">{error}</p></section>
   const labels = problem.locations
@@ -385,6 +405,7 @@ export function RoutePlannerPage() {
         <label><input type="checkbox" checked={problem.rentalEnabled} onChange={e => update({ rentalEnabled: e.target.checked })} /> Allow truck rental</label>
         <button className="button primary" onClick={solve} disabled={solving}>{solving ? 'Proving the optimum…' : 'Build optimal plan'}</button>
       </div>
+      {solving && elapsed >= 2 && <WaitingPanel seconds={elapsed} />}
       {error && <p className="notice error">{error}</p>}
     </section>
     {response && plan && <>

@@ -186,6 +186,15 @@ sup { color: #2d5a88; font-weight: 800; }
 .planner-form-grid label, .planner-options label { display: grid; gap: 6px; color: #475569; font-size: .82rem; }
 .planner-form-grid input { width: 100%; }
 .planner-options { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+.wait-panel { position: relative; display: flex; align-items: center; gap: 1rem; overflow: hidden; margin-top: 1.1rem; padding: 1rem 1.15rem; border-radius: 16px; background: #0b0d12; color: #fff; }
+.wait-panel strong { display: block; font-size: 1.02rem; letter-spacing: -.02em; font-weight: 650; }
+.wait-panel p { margin: .15rem 0 0; color: #a1a1aa; font-size: .86rem; }
+.wait-mark { position: relative; flex: none; width: 18px; height: 18px; }
+.wait-mark span { position: absolute; inset: 3px; border-radius: 50%; background: var(--gradient); }
+.wait-mark::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid #7c4dff; animation: pulseRing 2.4s var(--ease) infinite; }
+.wait-clock { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 1.35rem; letter-spacing: -.03em; font-weight: 650; }
+.wait-panel::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, #7c4dff, #00c2ff, transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: waitSlide 2.8s var(--ease) infinite; }
+@keyframes waitSlide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 .planner-options label { display: flex; align-items: center; gap: 7px; }
 .metric-grid, .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 18px 0 26px; }
 .metric-grid > div, .scenario-card { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
