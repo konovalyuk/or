@@ -28,7 +28,7 @@ Open http://localhost:5173. The Vite development server proxies `/api` requests 
 
 The landing page offers two workflows:
 
-- **Production** (`/production`) is the RTA Dubai freight network planner described below.
+- **Production** (`/production`) is the Dubai freight network planner described below.
 - **Education** replays the initial basic feasible solution cell by cell and then walks through the MODI potentials, evaluations, closed loop, theta, and pivots.
 
 The transportation API accepts a rectangular cost matrix, supply, demand, and one of `NORTHWEST_CORNER`, `LEAST_COST`, or `VOGEL_APPROXIMATION`. Unequal totals are balanced automatically by adding a zero-cost dummy source or destination; the response identifies the dummy route and includes immutable initial-solution snapshots.
@@ -39,7 +39,7 @@ The transportation API accepts a rectangular cost matrix, supply, demand, and on
 
 ### Example data (illustrative)
 
-The default example uses three Dubai logistics hubs. The values are realistic in magnitude but illustrative, not official RTA data; every value can be edited on the page.
+The default example uses three Dubai logistics hubs. The values are realistic in magnitude but illustrative, not official data; every value can be edited on the page.
 
 | | Jebel Ali Port | Dubai South / DWC | DXB Cargo Village |
 |---|---|---|---|

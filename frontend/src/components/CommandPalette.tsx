@@ -10,10 +10,10 @@ const PAGES = [
   { title: 'Models', hint: 'Transportation, LP and network models', path: '/study' },
   { title: 'Transportation model', hint: 'Vogel, MODI, step by step', path: '/transportation' },
   { title: 'Linear programming', hint: 'Graphical and simplex', path: '/linear-programming' },
-  { title: 'Minimal spanning tree', hint: 'Network models · 6.2', path: '/network/spanning-tree' },
-  { title: 'Shortest route', hint: 'Dijkstra and Floyd · 6.3', path: '/network/shortest-route' },
-  { title: 'Maximal flow', hint: 'Labeling algorithm · 6.4', path: '/network/max-flow' },
-  { title: 'Critical path', hint: 'CPM and PERT · 6.5', path: '/network/critical-path' },
+  { title: 'Minimal spanning tree', hint: 'Network models', path: '/network/spanning-tree' },
+  { title: 'Shortest route', hint: 'Dijkstra and Floyd', path: '/network/shortest-route' },
+  { title: 'Maximal flow', hint: 'Labeling algorithm', path: '/network/max-flow' },
+  { title: 'Critical path', hint: 'CPM and PERT', path: '/network/critical-path' },
 ]
 
 type Item = { kind: 'page'; title: string; hint: string; path: string } | { kind: 'app'; title: string; hint: string; app: Application }
@@ -83,7 +83,7 @@ function Palette({ onClose }: { onClose: () => void }) {
           <p>{current.app.problem}</p>
           <p style={{ color: 'var(--ink)', fontWeight: 600 }}>{current.app.payoff}</p>
           <p style={{ color: 'var(--muted)' }}>{current.app.documented ? 'Case: ' : 'Could benefit: '}{current.app.companies.join(', ')}</p>
-          <div className="chip-row">{current.app.documented && <span className="pill documented">Documented result</span>}<span className="pill source">Taha · {current.app.source}</span></div>
+          <div className="chip-row">{current.app.documented && <span className="pill documented">Documented result</span>}<span className="pill source">{current.app.source}</span></div>
           {liveRoute(current.app) && <p><button className="button primary" onClick={() => choose(current)}>Try it live →</button></p>}
         </>)}</div>
       </div>}

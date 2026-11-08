@@ -1,6 +1,7 @@
-import { animate, AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { type Application, APPLICATIONS, byIndustry, companiesFor, DOCUMENTED_RESULTS, INDUSTRIES, type Industry, liveRoute, type Method, METHODS } from '../applications/catalog'
+import { CountUp } from '../components/CountUp'
 import { Reveal, spotlight } from '../components/Reveal'
 import { navigate } from '../navigation'
 
@@ -16,20 +17,6 @@ function HeroFallback() {
     {points.map((p, i) => { const q = points[(i * 7 + 3) % points.length]; return <line key={`l${i}`} x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="#4f6dff" strokeOpacity=".25" strokeWidth=".12" /> })}
     {points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r=".45" fill="#c9d6ff" fillOpacity=".7" />)}
   </svg>
-}
-
-function CountUp({ value, prefix, suffix }: { value: number; prefix: string; suffix: string }) {
-  const ref = useRef<HTMLElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-40px' })
-  const reduce = useReducedMotion()
-  const decimals = (String(value).split('.')[1] ?? '').length
-  const [shown, setShown] = useState(reduce ? value : 0)
-  useEffect(() => {
-    if (!inView || reduce) return
-    const controls = animate(0, value, { duration: 1.6, ease: [.2, .8, .2, 1], onUpdate: setShown })
-    return () => controls.stop()
-  }, [inView, reduce, value])
-  return <strong ref={ref}>{prefix}{shown.toFixed(decimals)}{suffix}</strong>
 }
 
 const ICONS: Record<Industry, string> = { logistics: '⇄', energy: '◉', retail: '▤', manufacturing: '⚙', finance: '◈', airlines: '✈', healthcare: '✚', public: '⌂', construction: '▲', telecom: '⟟', agriculture: '❋', forestry: '⧖' }
@@ -56,7 +43,7 @@ function IndustryTile({ industry, wide, dark }: { industry: Industry; wide?: boo
     <h3>{INDUSTRIES[industry].label}</h3>
     <p className="tagline">{INDUSTRIES[industry].tagline}</p>
     <ul className="bento-list">{apps.map(app => <li key={app.id}><b>{app.title}</b> <span>({companiesFor(app, industry).slice(0, 3).join(', ')})</span></li>)}</ul>
-    <div className="bento-meta">{methods.map(m => <span key={m} className="pill">{METHODS[m].label} · {METHODS[m].chapter}</span>)}</div>
+    <div className="bento-meta">{methods.map(m => <span key={m} className="pill">{METHODS[m].label}</span>)}</div>
     {wide && <span className="bento-glyph" aria-hidden>{ICONS[industry]}</span>}
   </div>
 }
@@ -113,7 +100,11 @@ export function Home() {
         <motion.div className="home-hero-copy" initial={reduce ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [.2, .8, .2, 1] }}>
           <span className="eyebrow">Operations research for business</span>
           <h1>Right decisions in real operations, <span className="gradient-text">backed by mathematics.</span></h1>
-          <p className="lead">Routes, fleets, production, stock, staff and projects, formulated with the models of Taha’s <i>Operations Research</i> and solved to a proven optimum. You get the cheapest plan and the proof that it is the cheapest.</p>
+          <p className="lead">
+            <a className="lead-link" href="/study" onClick={event => { event.preventDefault(); navigate('/study') }}>Understand the algorithms.</a>{' '}
+            <a className="lead-link" href="/production" onClick={event => { event.preventDefault(); navigate('/production') }}>Watch one solve a real problem to proven optimality.</a>{' '}
+            <a className="lead-link" href="#applications" onClick={event => { event.preventDefault(); document.getElementById('applications')?.scrollIntoView({ behavior: 'smooth' }) }}>Find where they apply in your industry.</a>
+          </p>
           <div className="cta-row"><button className="button light" onClick={() => navigate('/production')}>Run the production planner</button><button className="button ghost" onClick={() => navigate('/study')}>Explore the models</button></div>
         </motion.div>
       </div>
@@ -122,7 +113,7 @@ export function Home() {
 
     <section className="proof-band">
       <div className="page-width">
-        <Reveal><span className="section-kicker">Documented in the book</span></Reveal>
+        <Reveal><span className="section-kicker">Documented results</span></Reveal>
         <Reveal delay={.05}><div className="proof-grid">{DOCUMENTED_RESULTS.map(item => <div key={`${item.who}-${item.label}`}><CountUp value={item.value} prefix={item.prefix} suffix={item.suffix} /><span>{item.label}</span><small>{item.who}</small></div>)}</div></Reveal>
         <p className="proof-note">Real-life applications reported in Taha, <i>Operations Research: An Introduction</i>, 10th edition, chapters 2–18 and Chapter 26.</p>
       </div>
@@ -140,16 +131,16 @@ export function Home() {
         <Reveal><span className="section-kicker">How it works</span><h2 className="section-title">From your data to a plan you can defend.</h2></Reveal>
         <div className="steps-row">
           {[['01', 'Describe the operation', 'Demand, capacities, costs and rules you already track. No new data collection.'],
-            ['02', 'Solve it exactly', 'Simplex, branch and bound and network algorithms, the methods of Taha’s book, implemented in this portal.'],
+            ['02', 'Solve it exactly', 'Simplex, branch and bound and network algorithms, implemented in this portal.'],
             ['03', 'Act with proof', 'A lower bound equal to the plan cost shows that no cheaper plan exists. Every step can be replayed.']].map(([n, title, text], i) =>
             <Reveal key={n} delay={i * .08} className="step-card"><span className="step-number gradient-text">{n}</span><h3>{title}</h3><p>{text}</p></Reveal>)}
         </div>
       </div>
     </section>
 
-    <section className="home-section tight">
+    <section className="home-section tight" id="applications">
       <div className="page-width">
-        <Reveal><span className="section-kicker">Application navigator</span><h2 className="section-title">Find the model behind your problem.</h2><p className="section-lead">{APPLICATIONS.length} applications from every part of Taha’s 10th edition. Filter by industry or method, then open the live solver where one exists.</p></Reveal>
+        <Reveal><span className="section-kicker">Application navigator</span><h2 className="section-title">Find the model behind your problem.</h2><p className="section-lead">{APPLICATIONS.length} operations research applications across industries and methods. Filter by industry or method, then open the live solver where one exists.</p></Reveal>
         <Navigator />
       </div>
     </section>
