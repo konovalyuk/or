@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Build the Spring Boot application and package the SPA into the JAR.
-FROM eclipse-temurin:25-jdk-alpine AS backend-build
+FROM eclipse-temurin:27-jdk-alpine AS backend-build
 WORKDIR /app
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
@@ -16,7 +16,7 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 RUN chmod +x gradlew && ./gradlew bootJar -x test -x buildFrontend
 
 # Runtime image contains only the application JAR and a Java runtime.
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:27-jre-alpine
 WORKDIR /app
 COPY --from=backend-build /app/build/libs/*.jar app.jar
 EXPOSE 8080
